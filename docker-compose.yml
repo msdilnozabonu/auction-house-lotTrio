@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    container_name: auction-house-app
+    environment:
+      DB_DSN: postgres://app:pass@db:5445/auction_house
+      JWT_SECRET: super-secret-key
+      PORT: "9999"
+    ports:
+      - "9999:9999"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:18-alpine
+    container_name: auction-house-db
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: auction_house
+    ports:
+      - "5445:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d auction_house"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
