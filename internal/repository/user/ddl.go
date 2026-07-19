@@ -12,7 +12,7 @@ const ddlUser = `create table IF NOT EXISTS users (
     password_hash text not null,
     role  varchar(50) NOT NULl default 'bidder'
         check (role in ('bidder', 'seller', 'admin')),
-    created_at timestamp with time zone NOT NULL
+    created_at timestamp not null default now()
 )`
 
 func runDdl(ctx context.Context, pool *pgxpool.Pool) error {

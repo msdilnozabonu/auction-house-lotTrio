@@ -2,6 +2,7 @@ package router
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	"auction-house-lotTrio/internal/middleware"
 	"context"
 	"net/http"
 
@@ -10,7 +11,8 @@ import (
 )
 
 func New(ctx context.Context, pool *pgxpool.Pool,
-	authHandler auth.Handler) (*gin.Engine, error) {
+	authHandler auth.Handler,
+	newMiddleware middleware.Middleware) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 

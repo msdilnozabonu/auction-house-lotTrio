@@ -2,6 +2,7 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	"auction-house-lotTrio/internal/middleware"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
@@ -69,7 +70,9 @@ func main() {
 	authService := auth2.NewService(userRepo)
 	authHandler := auth.NewHandler(authService)
 
-	engine, err := router.New(ctx, pool, authHandler)
+	newMiddleware := middleware.NewMiddleware(authService)
+
+	engine, err := router.New(ctx, pool, authHandler, newMiddleware)
 	if err != nil {
 		slog.Error("create router", "err", err)
 		os.Exit(1)
