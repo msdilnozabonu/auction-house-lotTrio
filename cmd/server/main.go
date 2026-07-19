@@ -1,7 +1,10 @@
 package main
 
 import (
+	"auction-house-lotTrio/internal/handler/auth"
+	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
+	auth2 "auction-house-lotTrio/internal/service/auth"
 	"context"
 	"errors"
 	"log/slog"
@@ -58,7 +61,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	engine, err := router.New(ctx, pool)
+	userRepo, err := user.New(ctx, pool)
+	if err != nil {
+		slog.Error("create user repository", "err", err)
+	}
+
+	authService := auth2.NewService(userRepo)
+	authHandler := auth.NewHandler(authService)
+
+	engine, err := router.New(ctx, pool, authHandler)
 	if err != nil {
 		slog.Error("create router", "err", err)
 		os.Exit(1)

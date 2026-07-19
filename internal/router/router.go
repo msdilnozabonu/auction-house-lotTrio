@@ -1,6 +1,7 @@
 package router
 
 import (
+	"auction-house-lotTrio/internal/handler/auth"
 	"context"
 	"net/http"
 
@@ -8,7 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(ctx context.Context, pool *pgxpool.Pool) (*gin.Engine, error) {
+func New(ctx context.Context, pool *pgxpool.Pool,
+	authHandler auth.Handler) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 
@@ -25,6 +27,12 @@ func New(ctx context.Context, pool *pgxpool.Pool) (*gin.Engine, error) {
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	authGroup := api.Group("/auth")
+	{
+		authGroup.POST("/register", authHandler.Registration)
+		authGroup.POST("/login", authHandler.Login)
+	}
 
 	return engine, nil
 }

@@ -31,5 +31,5 @@ go.work.sum
 .idea/
 .vscode/
 
-.env.example
+.env
 docker-compose.yml
