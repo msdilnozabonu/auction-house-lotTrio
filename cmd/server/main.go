@@ -70,9 +70,11 @@ func main() {
 	authService := auth2.NewService(userRepo)
 	authHandler := auth.NewHandler(authService)
 
+
 	newMiddleware := middleware.NewMiddleware(authService)
 
 	engine, err := router.New(ctx, pool, authHandler, newMiddleware)
+
 	if err != nil {
 		slog.Error("create router", "err", err)
 		os.Exit(1)
