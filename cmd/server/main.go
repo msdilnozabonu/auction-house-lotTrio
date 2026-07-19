@@ -37,7 +37,7 @@ func getLoggerLevel(level string) slog.Level {
 // @host            localhost:9999
 // @BasePath        /api/v1
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(".env.example"); err != nil {
 		slog.Warn(".env file not found", "err", err)
 	}
 	logLevel := getLoggerLevel(os.Getenv("LOG_LEVEL"))
