@@ -5,8 +5,7 @@ AuctionHouse — backend-платформа онлайн-аукциона на G
 
 [![Lint](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/lint.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/lint.yml)
 [![Nilaway](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/nilaway.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/nilaway.yml)
-[![Tests & Coverage](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/test.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/msdilnozabonu/auction-house-lotTrio/badges/.badges/coverage.json)](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/.badges/coverage.json)
+[![Coverage](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/coverage.svg)](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/coverage.svg)
 
 ## Ключевые особенности
 
