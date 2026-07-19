@@ -29,7 +29,7 @@ func (h *handler) Registration(c *gin.Context) {
 		return
 	}
 
-	err := h.authService.Register(c.Request.Context(), request.Login, request.Pass)
+	err := h.authService.Register(c.Request.Context(), request.Login, request.Pass, request.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -65,4 +65,5 @@ func (h *handler) Login(c *gin.Context) {
 type user struct {
 	Login string `json:"login"`
 	Pass  string `json:"password"`
+	Role  string `json:"role"`
 }

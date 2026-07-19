@@ -11,7 +11,7 @@ import (
 )
 
 type Repo interface {
-	Create(ctx context.Context, login, password string) error
+	Create(ctx context.Context, login, password string, role string) error
 	GetUserByLogin(ctx context.Context, login string) (User, error)
 }
 
@@ -35,9 +35,9 @@ type User struct {
 	CreatedAt time.Time
 }
 
-func (r *repo) Create(ctx context.Context, login, password string) error {
-	_, err := r.repo.Exec(ctx, `INSERT INTO users (login, password) values ($1, $2)`,
-		login, password)
+func (r *repo) Create(ctx context.Context, login, password string, role string) error {
+	_, err := r.repo.Exec(ctx, `INSERT INTO users (login, password_hash, role) values ($1, $2, $3)`,
+		login, password, role)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (r *repo) Create(ctx context.Context, login, password string) error {
 
 func (r *repo) GetUserByLogin(ctx context.Context, login string) (User, error) {
 	var user User
-	err := r.repo.QueryRow(ctx, `SELECT id, login, password, role, created_at FROM users WHERE login = $1`, login).
+	err := r.repo.QueryRow(ctx, `SELECT id, login, password_hash, role, created_at FROM users WHERE login = $1`, login).
 		Scan(&user.ID, &user.Login, &user.Password, &user.Role, &user.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

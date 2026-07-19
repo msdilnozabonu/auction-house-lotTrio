@@ -6,13 +6,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const ddlUser = `create table users (
+const ddlUser = `create table IF NOT EXISTS users (
     id bigserial primary key,
     login text  not null unique,
     password_hash text not null,
-    role text not null default 'bidder'
+    role  varchar(50) NOT NULl default 'bidder'
         check (role in ('bidder', 'seller', 'admin')),
-    created_at timestamp not null default now()
+    created_at timestamp with time zone NOT NULL
 )`
 
 func runDdl(ctx context.Context, pool *pgxpool.Pool) error {

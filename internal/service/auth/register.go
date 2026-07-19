@@ -19,7 +19,7 @@ type service struct {
 }
 
 type Service interface {
-	Register(ctx context.Context, login, password string) error
+	Register(ctx context.Context, login, password string, role string) error
 	Login(ctx context.Context, login, password string) (string, error)
 }
 
@@ -31,7 +31,7 @@ func NewService(userRepo user.Repo) Service {
 	}
 }
 
-func (s *service) Register(ctx context.Context, login, password string) error {
+func (s *service) Register(ctx context.Context, login, password string, role string) error {
 	if len(login) < 3 {
 		return model.ErrLenLogin
 	}
@@ -45,7 +45,7 @@ func (s *service) Register(ctx context.Context, login, password string) error {
 		return err
 	}
 
-	err = s.userRepo.Create(ctx, login, string(pasHash))
+	err = s.userRepo.Create(ctx, login, string(pasHash), role)
 	if err != nil {
 		return err
 	}
