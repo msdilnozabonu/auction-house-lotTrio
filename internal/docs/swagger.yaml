@@ -1,0 +1,66 @@
+basePath: /api/v1
+definitions:
+  auth.user:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:9999
+info:
+  contact: {}
+  title: AuctionHouse API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет логин и пароль, возвращает токен
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.user'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт пользователя в базе
+      parameters:
+      - description: Регистрация
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.user'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Регистрация пользователя
+      tags:
+      - auth
+swagger: "2.0"
