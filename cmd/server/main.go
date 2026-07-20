@@ -15,6 +15,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "auction-house-lotTrio/internal/docs"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -65,11 +67,11 @@ func main() {
 	userRepo, err := user.New(ctx, pool)
 	if err != nil {
 		slog.Error("create user repository", "err", err)
+		os.Exit(1)
 	}
 
 	authService := auth2.NewService(userRepo)
 	authHandler := auth.NewHandler(authService)
-
 
 	newMiddleware := middleware.NewMiddleware(authService)
 
