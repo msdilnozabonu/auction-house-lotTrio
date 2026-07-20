@@ -8,6 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func New(ctx context.Context, pool *pgxpool.Pool,
@@ -29,6 +31,8 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	authGroup := api.Group("/auth")
 	{

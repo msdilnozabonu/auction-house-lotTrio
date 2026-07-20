@@ -20,10 +20,6 @@ type repo struct {
 }
 
 func New(ctx context.Context, pool *pgxpool.Pool) (Repo, error) {
-	err := runDdl(ctx, pool)
-	if err != nil {
-		return nil, err
-	}
 	return &repo{repo: pool}, nil
 }
 
