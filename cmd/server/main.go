@@ -31,7 +31,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const shutdownTime = 5
+const (
+	shutdownTime = 5
+	scheduler = 5*time.Minute
+)
 
 func getLoggerLevel(level string) slog.Level {
 	switch level {
@@ -139,12 +142,15 @@ func buildRouter(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (
 	userHandler := userhandler.New(userService, logger)
 
 	lotsRepo, err := lots2.New(pool)
+	if err != nil {
+		return nil, fmt.Errorf("create lots repository: %w", err)
+	}
 
 
 	lotsService := lots.NewService(lotsRepo)
 	lotsHandler := lots3.NewHandler(lotsService)
 
-	lotsService.StartScheduler(ctx, 5*time.Minute)
+	lotsService.StartScheduler(ctx, scheduler)
 
 	sessionRepo := session.New(pool)
 	authService := auth2.NewService(userRepo, sessionRepo)
