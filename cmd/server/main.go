@@ -66,7 +66,10 @@ func main() {
 	ctx := context.Background()
 	pool := newPool(ctx)
 
-	engine, err := buildRouter(ctx, pool, logger)
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	engine, err := buildRouter(ctx, sigCtx, pool, logger)
 	if err != nil {
 		slog.Error("create router", "err", err)
 		os.Exit(1)
@@ -92,8 +95,6 @@ func main() {
 
 	slog.Info("server started", "port", port)
 
-	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	<-sigCtx.Done()
 	slog.Info("shutdown signal received")
@@ -132,7 +133,7 @@ func newPool(ctx context.Context) *pgxpool.Pool {
 	return pool
 }
 
-func buildRouter(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (*gin.Engine, error) {
+func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (*gin.Engine, error) {
 	userRepo, err := user.New(pool)
 	if err != nil {
 		return nil, fmt.Errorf("create user repository: %w", err)
@@ -150,7 +151,7 @@ func buildRouter(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (
 	lotsService := lots.NewService(lotsRepo)
 	lotsHandler := lots3.NewHandler(lotsService)
 
-	lotsService.StartScheduler(ctx, scheduler)
+	lotsService.StartScheduler(schedulerCtx, scheduler)
 
 	sessionRepo := session.New(pool)
 	authService := auth2.NewService(userRepo, sessionRepo)

@@ -4,7 +4,11 @@ import (
 	"auction-house-lotTrio/internal/repository/lots"
 	"context"
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -64,5 +68,24 @@ func TestService_CloseExpiredLot_CloseLotError(t *testing.T) {
 	closed, err := s.CloseExpiredLot(context.Background())
 	require.Error(t, err)
 	require.Equal(t, 0, closed)
+	m.AssertExpectations(t)
+}
+
+func TestService_StartScheduler_Success(t *testing.T) {
+	m := new(lots.MockRepo)
+
+	m.On("FindExpiredLot", mock.Anything, mock.AnythingOfType("time.Time")).Return([]int64{1}, nil)
+	m.On("CloseLot", mock.Anything, int64(1)).Return(true, nil)
+
+	s := NewService(m)
+
+	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	s.StartScheduler(sigCtx, 10*time.Millisecond)
+
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+
 	m.AssertExpectations(t)
 }
