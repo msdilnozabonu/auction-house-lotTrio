@@ -2,8 +2,8 @@ package router
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
-	"auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/handler/lots"
+	"auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
 	"context"
 	"net/http"

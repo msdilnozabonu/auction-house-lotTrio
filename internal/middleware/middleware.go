@@ -3,7 +3,6 @@ package middleware
 import (
 	"auction-house-lotTrio/internal/service/auth"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"

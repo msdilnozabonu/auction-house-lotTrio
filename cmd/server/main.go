@@ -2,16 +2,18 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+
 	lots3 "auction-house-lotTrio/internal/handler/lots"
 	userhandler "auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
-	"auction-house-lotTrio/internal/repository/session"
+
 	lots2 "auction-house-lotTrio/internal/repository/lots"
+	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
-	userservice "auction-house-lotTrio/internal/service/user"
 	"auction-house-lotTrio/internal/service/lots"
+	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
 	"errors"
 	"log/slog"
