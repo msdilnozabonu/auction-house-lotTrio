@@ -6,10 +6,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
-type Middleware interface{}
+type Middleware interface {
+	Auth() gin.HandlerFunc
+}
 
 type middleware struct {
 	authService auth.Service
@@ -32,23 +33,19 @@ func RequireRole(role string) gin.HandlerFunc {
 
 func (m *middleware) Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
-		tok, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
-			return token, nil
-		})
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		authToken := c.GetHeader("Authorization")
+		if !strings.HasPrefix(authToken, "Bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
 			return
 		}
-		claims := tok.Claims.(jwt.MapClaims)
-
-		uid, ok := claims["uid"].(float64)
-		if !ok {
+		token := strings.TrimPrefix(authToken, "Bearer ")
+		uid, role, err := m.authService.ValidateAccessToken(token)
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
 		}
-		c.Set("user_id", int(uid))
-		c.Set("role", claims["role"])
+		c.Set("user_id", uid)
+		c.Set("role", role)
 		c.Next()
 	}
 }

@@ -2,10 +2,13 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	userhandler "auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
+	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
+	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
 	"errors"
 	"log/slog"
@@ -38,10 +41,13 @@ func getLoggerLevel(level string) slog.Level {
 	}
 }
 
-// @title           AuctionHouse API
-// @version         1.0
-// @host            localhost:9999
-// @BasePath        /api/v1
+// @title						AuctionHouse API
+// @version					1.0
+// @host						localhost:9999
+// @BasePath					/api/v1
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
 func main() {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
@@ -64,18 +70,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	userRepo, err := user.New(ctx, pool)
+	userRepo, err := user.New(pool)
 	if err != nil {
 		slog.Error("create user repository", "err", err)
 		os.Exit(1)
 	}
 
-	authService := auth2.NewService(userRepo)
+	userService := userservice.New(userRepo)
+	userHandler := userhandler.New(userService, logger)
+
+	sessionRepo := session.New(pool)
+	authService := auth2.NewService(userRepo, sessionRepo)
 	authHandler := auth.NewHandler(authService)
 
 	newMiddleware := middleware.NewMiddleware(authService)
 
-	engine, err := router.New(ctx, pool, authHandler, newMiddleware)
+	engine, err := router.New(ctx, pool, authHandler, userHandler, newMiddleware)
 
 	if err != nil {
 		slog.Error("create router", "err", err)
