@@ -3,6 +3,7 @@ package middleware
 import (
 	"auction-house-lotTrio/internal/service/auth"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,7 @@ func (m *middleware) Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 		tok, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
-			return token, nil
+			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})

@@ -21,3 +21,32 @@ Content-Type: application/json
   "password":"adminadmin",
   "role": "admin"
 }
+
+
+###
+POST http://localhost:9999/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "login": "Rayhona",
+  "password":"adminadmin",
+  "role": "admin"
+}
+
+###
+POST http://localhost:9999/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "Rayhona",
+  "password":"adminadmin",
+  "role": "admin"
+}
+
+> {%
+    client.global.set("authToken", response.body.authToken);
+%}
+
+###
+POST http://localhost:9999/api/v1/admin/close-expired
+Authorization: Bearer {{authToken}}
