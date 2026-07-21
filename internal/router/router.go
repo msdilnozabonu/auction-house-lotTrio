@@ -2,6 +2,7 @@ package router
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	lots2 "auction-house-lotTrio/internal/handler/lots"
 	"auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
 	"context"
@@ -15,7 +16,8 @@ import (
 
 func New(ctx context.Context, pool *pgxpool.Pool,
 	authHandler auth.Handler, userHandler user.Handler,
-	newMiddleware middleware.Middleware) (*gin.Engine, error) {
+	newMiddleware middleware.Middleware,
+	lotHandler lots2.LotHandler) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 
@@ -43,5 +45,10 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		authGroup.POST("/logout", newMiddleware.Auth(), authHandler.Logout)
 	}
 
+	lotsGroup := api.Group("/lots")
+	{
+		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
+		lotsGroup.GET("", lotHandler.GetAll)
+	}
 	return engine, nil
 }
