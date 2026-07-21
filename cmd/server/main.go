@@ -2,6 +2,10 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	"errors"
+	"net/http"
+	"os/signal"
+	"syscall"
 
 	lots3 "auction-house-lotTrio/internal/handler/lots"
 	userhandler "auction-house-lotTrio/internal/handler/user"
@@ -15,13 +19,9 @@ import (
 	"auction-house-lotTrio/internal/service/lots"
 	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	_ "auction-house-lotTrio/internal/docs"
@@ -59,6 +59,13 @@ func getLoggerLevel(level string) slog.Level {
 // @in							header
 // @name						Authorization
 func main() {
+	if err := run(); err != nil {
+		slog.Error("run", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run () error {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
 	}
@@ -72,7 +79,7 @@ func main() {
 	engine, err := buildRouter(ctx, sigCtx, pool, logger)
 	if err != nil {
 		slog.Error("create router", "err", err)
-		os.Exit(1)
+		return fmt.Errorf("create router: %w", err)
 	}
 
 	port := os.Getenv("PORT")
@@ -110,8 +117,8 @@ func main() {
 
 	pool.Close()
 	slog.Info("shutdown")
+	return nil
 }
-
 func newLogger() *slog.Logger {
 	logLevel := getLoggerLevel(os.Getenv("LOG_LEVEL"))
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
