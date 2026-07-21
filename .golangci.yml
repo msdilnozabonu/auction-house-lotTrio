@@ -1,0 +1,86 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - asasalint
+    - bodyclose
+    - dupl
+    - durationcheck
+    - errname
+    - exptostd
+    - gosec
+    - importas
+    - iface
+    - intrange
+    - lll
+    - musttag
+    - nestif
+    - nilerr
+    - nilnil
+    - perfsprint
+    - prealloc
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - sqlclosecheck
+    - thelper
+    - usestdlibvars
+    - wrapcheck
+    - gocritic
+    - mnd
+    - unconvert
+    - unparam
+    - gocyclo
+    - gocognit
+    - funlen
+    - cyclop
+    - contextcheck
+    - exhaustive
+    - noctx
+    - whitespace
+    - misspell
+    - asciicheck
+    - bidichk
+    - copyloopvar
+    - dupword
+    - errchkjson
+    - errorlint
+    - goconst
+    - grouper
+    - nakedret
+    - nonamedreturns
+    - predeclared
+    - tagalign
+    - wastedassign
+  exclusions:
+    # _test.go не линтим (магические числа, длинные таблицы — это норма для тестов)
+    paths:
+      - .*_test\.go
+run:
+  timeout: 10m
+  allow-parallel-runners: true
+  go: "1.22"
+  tests: false
+severity:
+  default: error
+  rules:
+    - severity: warning
+      linters:
+        - dupl
+        - funlen
+        - gocyclo
+        - gocognit
+        - cyclop
+output:
+  formats:
+    text:
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
+      path: stderr
+  show-stats: true

@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -40,7 +41,10 @@ func (r *repo) CreateSession(ctx context.Context, userID int64, tokenHash string
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO sessions (user_id, refresh_token, expires_at) VALUES ($1, $2, $3) RETURNING id`,
 		userID, tokenHash, expiresAt).Scan(&id)
-	return id, err
+	if err != nil {
+		return 0, fmt.Errorf("create session: %w", err)
+	}
+	return id, nil
 }
 
 func (r *repo) GetSessionByTokenHash(ctx context.Context, tokenHash string) (Session, error) {
@@ -53,7 +57,7 @@ func (r *repo) GetSessionByTokenHash(ctx context.Context, tokenHash string) (Ses
 		if errors.Is(err, pgx.ErrNoRows) {
 			return s, model.ErrSessionNotFound
 		}
-		return s, err
+		return s, nil
 	}
 	return s, nil
 }
@@ -67,7 +71,7 @@ func (r *repo) RotateSessionToken(ctx context.Context, sessionID int64,
 		newTokenHash, newExpiresAt, sessionID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("rotate session token: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return model.ErrSessionNotFound
@@ -77,7 +81,10 @@ func (r *repo) RotateSessionToken(ctx context.Context, sessionID int64,
 
 func (r *repo) DeleteSession(ctx context.Context, tokenHash string) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM sessions WHERE refresh_token = $1`, tokenHash)
-	return err
+	if err != nil {
+		return fmt.Errorf("delete session: %w", err)
+	}
+	return nil
 }
 
 func (r *repo) GetUserRole(ctx context.Context, userID int64) (string, error) {
@@ -87,7 +94,7 @@ func (r *repo) GetUserRole(ctx context.Context, userID int64) (string, error) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", model.ErrUserNotFound
 		}
-		return "", err
+		return "", fmt.Errorf("get user role: %w", err)
 	}
 	return role, nil
 }
