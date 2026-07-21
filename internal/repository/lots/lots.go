@@ -2,6 +2,7 @@ package lots
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,7 +29,7 @@ func New(pool *pgxpool.Pool) (Repo, error) {
 func (r *repo) FindExpiredLot(ctx context.Context, now time.Time) ([]int64, error) {
 	rows, err := r.repo.Query(ctx, lotExpired, now)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find expired lot: %w", err)
 	}
 	defer rows.Close()
 
@@ -36,17 +37,17 @@ func (r *repo) FindExpiredLot(ctx context.Context, now time.Time) ([]int64, erro
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("scan lot id: %w", err)
 		}
 		ids = append(ids, id)
 	}
-	return ids, rows.Err()
+	return ids, fmt.Errorf("find expired lot: %w", rows.Err())
 }
 
 func (r *repo) CloseLot(ctx context.Context, id int64) (bool, error) {
 	tags, err := r.repo.Exec(ctx, closeLot, id)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("close lot: %w", err)
 	}
 	return tags.RowsAffected() > 0, nil
 }

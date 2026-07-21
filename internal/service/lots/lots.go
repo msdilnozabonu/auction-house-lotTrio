@@ -3,6 +3,7 @@ package lots
 import (
 	"auction-house-lotTrio/internal/repository/lots"
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 )
@@ -28,14 +29,14 @@ func (s *service) CloseExpiredLot(ctx context.Context) (int, error) {
 	ids, err := s.lotsRepo.FindExpiredLot(ctx, time.Now())
 	if err != nil {
 		s.logger.Error("failed to find expired lot: ", "error: ", err)
-		return 0, err
+		return 0, fmt.Errorf("find expired lot: %w", err)
 	}
 	closed := 0
 	for _, id := range ids {
 		tags, err := s.lotsRepo.CloseLot(ctx, id)
 		if err != nil {
 			s.logger.Error("failed to close lot: ", "error: ", err)
-			return 0, err
+			return 0, fmt.Errorf("close lot: %w", err)
 		}
 		if tags {
 			s.logger.Info("lot closed: ", "id: ", id)

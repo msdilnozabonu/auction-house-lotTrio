@@ -8,6 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	statusOk = 200
+)
+
 type Handler interface {
 	CloseExpiredLot(c *gin.Context)
 }
@@ -40,5 +44,5 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	response.RespondJSON(c, 200, gin.H{"closed": count})
+	response.RespondJSON(c, statusOk, gin.H{"closed": count})
 }
