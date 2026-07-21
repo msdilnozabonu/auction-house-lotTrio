@@ -3,11 +3,14 @@ package main
 import (
 	"auction-house-lotTrio/internal/handler/auth"
 	lots3 "auction-house-lotTrio/internal/handler/lots"
+	userhandler "auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
+	"auction-house-lotTrio/internal/repository/session"
 	lots2 "auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
+	userservice "auction-house-lotTrio/internal/service/user"
 	"auction-house-lotTrio/internal/service/lots"
 	"context"
 	"errors"
@@ -41,10 +44,13 @@ func getLoggerLevel(level string) slog.Level {
 	}
 }
 
-// @title           AuctionHouse API
-// @version         1.0
-// @host            localhost:9999
-// @BasePath        /api/v1
+// @title						AuctionHouse API
+// @version					1.0
+// @host						localhost:9999
+// @BasePath					/api/v1
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
 func main() {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
@@ -67,7 +73,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	userRepo, err := user.New(ctx, pool)
+	userRepo, err := user.New(pool)
 	if err != nil {
 		slog.Error("create user repository", "err", err)
 		os.Exit(1)
@@ -79,7 +85,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	authService := auth2.NewService(userRepo)
+	userService := userservice.New(userRepo)
+	userHandler := userhandler.New(userService, logger)
+
+	sessionRepo := session.New(pool)
+	authService := auth2.NewService(userRepo, sessionRepo)
 	authHandler := auth.NewHandler(authService)
 
 	newMiddleware := middleware.NewMiddleware(authService)
@@ -89,7 +99,7 @@ func main() {
 
 	lotsService.StartScheduler(ctx, 5*time.Minute)
 
-	engine, err := router.New(ctx, pool, authHandler, newMiddleware, lotsHandler)
+	engine, err := router.New(ctx, pool, authHandler, userHandler, newMiddleware, lotsHandler)
 
 	if err != nil {
 		slog.Error("create router", "err", err)

@@ -1,6 +1,23 @@
 basePath: /api/v1
 definitions:
-  auth.user:
+  auth.loginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  auth.refreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.registerRequest:
     properties:
       login:
         type: string
@@ -8,6 +25,9 @@ definitions:
         type: string
       role:
         type: string
+    required:
+    - login
+    - password
     type: object
 host: localhost:9999
 info:
@@ -26,7 +46,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/auth.user'
+          $ref: '#/definitions/auth.loginRequest'
       produces:
       - application/json
       responses:
@@ -37,6 +57,56 @@ paths:
         "500":
           description: Internal Server Error
       summary: Авторизация пользователя
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Отзывает refresh-токен
+      parameters:
+      - description: Refresh токен
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.refreshRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Выход пользователя
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Ротирует refresh-токен и выдаёт новую пару токенов
+      parameters:
+      - description: Refresh токен
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.refreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      summary: Обновление токенов
       tags:
       - auth
   /auth/register:
@@ -50,7 +120,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/auth.user'
+          $ref: '#/definitions/auth.registerRequest'
       produces:
       - application/json
       responses:
@@ -63,4 +133,28 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /me:
+    get:
+      description: Возвращает данные авторизованного пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Информация о текущем пользователе
+      tags:
+      - user
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -2,6 +2,7 @@ package router
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	"auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/handler/lots"
 	"auction-house-lotTrio/internal/middleware"
 	"context"
@@ -14,7 +15,7 @@ import (
 )
 
 func New(ctx context.Context, pool *pgxpool.Pool,
-	authHandler auth.Handler,
+	authHandler auth.Handler, userHandler user.Handler,
 	newMiddleware middleware.Middleware,
 	lotsHandler lots.Handler) (*gin.Engine, error) {
 	engine := gin.New()
@@ -35,11 +36,13 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	})
 
 	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
+	api.GET("/me", newMiddleware.Auth(), userHandler.Me)
 	authGroup := api.Group("/auth")
 	{
 		authGroup.POST("/register", authHandler.Registration)
 		authGroup.POST("/login", authHandler.Login)
+		authGroup.POST("/refresh", authHandler.Refresh)
+		authGroup.POST("/logout", newMiddleware.Auth(), authHandler.Logout)
 	}
 
 	adminGroup := api.Group("/admin")
