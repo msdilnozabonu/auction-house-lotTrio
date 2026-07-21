@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -20,6 +21,10 @@ import (
 const (
 	accessTokenDuration  = 15 * time.Minute
 	refreshTokenDuration = 240 * time.Hour
+
+	minLoginLen       = 3
+	minPasswordLen    = 8
+	refreshTokenBytes = 32
 )
 
 type service struct {
@@ -50,22 +55,22 @@ func NewService(userRepo user.Repo, sessionRepo session.Repo) Service {
 }
 
 func (s *service) Register(ctx context.Context, login, password string, role string) error {
-	if len(login) < 3 {
+	if len(login) < minLoginLen {
 		return model.ErrLenLogin
 	}
 
-	if len(password) < 8 {
+	if len(password) < minPasswordLen {
 		return model.ErrLenPass
 	}
 
 	pasHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
-		return err
+		return fmt.Errorf("generate password hash: %w", err)
 	}
 
 	err = s.userRepo.Create(ctx, login, string(pasHash), role)
 	if err != nil {
-		return err
+		return fmt.Errorf("create user: %w", err)
 	}
 
 	return nil
@@ -74,7 +79,7 @@ func (s *service) Register(ctx context.Context, login, password string, role str
 func (s *service) Login(ctx context.Context, login, password string) (TokenPair, error) {
 	userInfo, err := s.userRepo.GetUserByLogin(ctx, login)
 	if err != nil {
-		return TokenPair{}, err
+		return TokenPair{}, fmt.Errorf("get user by login: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(password))
@@ -84,16 +89,16 @@ func (s *service) Login(ctx context.Context, login, password string) (TokenPair,
 
 	access, err := s.newAccessToken(userInfo.ID, userInfo.Role)
 	if err != nil {
-		return TokenPair{}, err
+		return TokenPair{}, fmt.Errorf("create access token: %w", err)
 	}
 	refresh, hash, err := newRefreshToken()
 	if err != nil {
-		return TokenPair{}, err
+		return TokenPair{}, fmt.Errorf("generate refresh token: %w", err)
 	}
 
 	_, err = s.sessionRepo.CreateSession(ctx, userInfo.ID, hash, time.Now().Add(refreshTokenDuration))
 	if err != nil {
-		return TokenPair{}, err
+		return TokenPair{}, fmt.Errorf("create session: %w", err)
 	}
 
 	return TokenPair{AccessToken: access, RefreshToken: refresh}, nil
@@ -109,18 +114,18 @@ func (s *service) newAccessToken(userID int64, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(s.jwtSecret)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("sign access token: %w", err)
 	}
 	return tokenString, nil
 }
 
-func newRefreshToken() (raw string, hash string, err error) {
-	buf := make([]byte, 32)
-	if _, err = rand.Read(buf); err != nil {
-		return "", "", err
+func newRefreshToken() (string, string, error) {
+	buf := make([]byte, refreshTokenBytes)
+	if _, err := rand.Read(buf); err != nil {
+		return "", "", fmt.Errorf("generate random refresh token: %w", err)
 	}
-	raw = base64.RawURLEncoding.EncodeToString(buf)
-	hash = hashToken(raw)
+	raw := base64.RawURLEncoding.EncodeToString(buf)
+	hash := hashToken(raw)
 	return raw, hash, nil
 }
 
@@ -143,7 +148,7 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (TokenPair, 
 
 	role, err := s.sessionRepo.GetUserRole(ctx, sess.UserID)
 	if err != nil {
-		return TokenPair{}, err
+		return TokenPair{}, fmt.Errorf("get user role: %w", err)
 	}
 
 	newRefresh, newHash, err := newRefreshToken()
@@ -153,7 +158,7 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (TokenPair, 
 
 	err = s.sessionRepo.RotateSessionToken(ctx, sess.ID, newHash, time.Now().Add(refreshTokenDuration))
 	if err != nil {
-		return TokenPair{}, err
+		return TokenPair{}, fmt.Errorf("rotate session token: %w", err)
 	}
 
 	access, err := s.newAccessToken(sess.UserID, role)
@@ -164,13 +169,16 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (TokenPair, 
 }
 
 func (s *service) Logout(ctx context.Context, refreshToken string) error {
-	return s.sessionRepo.DeleteSession(ctx, hashToken(refreshToken))
+	if err := s.sessionRepo.DeleteSession(ctx, hashToken(refreshToken)); err != nil {
+		return fmt.Errorf("delete session: %w", err)
+	}
+	return nil
 }
 
 func (s *service) ValidateAccessToken(token string) (int64, string, error) {
 	tok, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method")
+			return nil, errors.New("unexpected signing method")
 		}
 		return s.jwtSecret, nil
 	})

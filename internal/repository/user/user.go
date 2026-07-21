@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -42,7 +43,7 @@ func (r *repo) Create(ctx context.Context, login, password string, role string) 
 		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == uniqueViolation {
 			return model.ErrUserAlreadyExists
 		}
-		return err
+		return fmt.Errorf("create user: %w", err)
 	}
 	return nil
 }
@@ -55,7 +56,7 @@ func (r *repo) GetUserByLogin(ctx context.Context, login string) (User, error) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return user, model.ErrUserNotFound
 		}
-		return user, err
+		return user, fmt.Errorf("get user by login: %w", err)
 	}
 	return user, nil
 }
@@ -73,7 +74,7 @@ func (r *repo) GetByID(ctx context.Context, id int64) (model.User, error) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return user, model.ErrUserNotFound
 		}
-		return user, err
+		return user, fmt.Errorf("get user by id: %w", err)
 	}
 
 	return user, nil
