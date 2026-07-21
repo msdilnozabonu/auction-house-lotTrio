@@ -41,7 +41,10 @@ func (r *repo) FindExpiredLot(ctx context.Context, now time.Time) ([]int64, erro
 		}
 		ids = append(ids, id)
 	}
-	return ids, fmt.Errorf("find expired lot: %w", rows.Err())
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get lot ids: %w", err)
+	}
+	return ids, nil
 }
 
 func (r *repo) CloseLot(ctx context.Context, id int64) (bool, error) {
