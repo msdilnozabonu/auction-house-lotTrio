@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/repository/user"
 	"context"
+	"fmt"
 )
 
 type Service interface {
@@ -21,5 +22,9 @@ func New(userRepo user.Repo) Service {
 }
 
 func (s *service) Me(ctx context.Context, userID int64) (model.User, error) {
-	return s.userRepo.GetByID(ctx, userID)
+	userInfo, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return model.User{}, fmt.Errorf("get user by id: %w", err)
+	}
+	return userInfo, nil
 }
