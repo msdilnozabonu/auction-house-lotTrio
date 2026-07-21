@@ -2,10 +2,13 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	lots3 "auction-house-lotTrio/internal/handler/lots"
 	"auction-house-lotTrio/internal/middleware"
+	lots2 "auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
+	"auction-house-lotTrio/internal/service/lots"
 	"context"
 	"errors"
 	"log/slog"
@@ -70,12 +73,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	lotsRepo, err := lots2.New(pool)
+	if err != nil {
+		slog.Error("create lots repository", "err", err)
+		os.Exit(1)
+	}
+
 	authService := auth2.NewService(userRepo)
 	authHandler := auth.NewHandler(authService)
 
 	newMiddleware := middleware.NewMiddleware(authService)
 
-	engine, err := router.New(ctx, pool, authHandler, newMiddleware)
+	lotsService := lots.NewService(lotsRepo)
+	lotsHandler := lots3.NewHandler(lotsService)
+
+	lotsService.StartScheduler(ctx, 5*time.Minute)
+
+	engine, err := router.New(ctx, pool, authHandler, newMiddleware, lotsHandler)
 
 	if err != nil {
 		slog.Error("create router", "err", err)

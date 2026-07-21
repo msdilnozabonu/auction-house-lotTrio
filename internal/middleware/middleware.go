@@ -9,7 +9,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type Middleware interface{}
+type Middleware interface {
+	Auth() gin.HandlerFunc
+}
 
 type middleware struct {
 	authService auth.Service
