@@ -16,6 +16,7 @@ import (
 	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -25,6 +26,7 @@ import (
 
 	_ "auction-house-lotTrio/internal/docs"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -57,52 +59,11 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
 	}
-	logLevel := getLoggerLevel(os.Getenv("LOG_LEVEL"))
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
-	slog.SetDefault(logger)
-
+	logger := newLogger()
 	ctx := context.Background()
+	pool := newPool(ctx)
 
-	dsn := os.Getenv("DB_DSN")
-	if dsn == "" {
-		slog.Error("DB_DSN is not set")
-		os.Exit(1)
-	}
-
-	pool, err := pgxpool.New(ctx, dsn)
-	if err != nil {
-		slog.Error("connect database", "err", err)
-		os.Exit(1)
-	}
-
-	userRepo, err := user.New(pool)
-	if err != nil {
-		slog.Error("create user repository", "err", err)
-		os.Exit(1)
-	}
-
-	lotsRepo, err := lots2.New(pool)
-	if err != nil {
-		slog.Error("create lots repository", "err", err)
-		os.Exit(1)
-	}
-
-	userService := userservice.New(userRepo)
-	userHandler := userhandler.New(userService, logger)
-
-	sessionRepo := session.New(pool)
-	authService := auth2.NewService(userRepo, sessionRepo)
-	authHandler := auth.NewHandler(authService)
-
-	newMiddleware := middleware.NewMiddleware(authService)
-
-	lotsService := lots.NewService(lotsRepo)
-	lotsHandler := lots3.NewHandler(lotsService)
-
-	lotsService.StartScheduler(ctx, 5*time.Minute)
-
-	engine, err := router.New(ctx, pool, authHandler, userHandler, newMiddleware, lotsHandler)
-
+	engine, err := buildRouter(ctx, pool, logger)
 	if err != nil {
 		slog.Error("create router", "err", err)
 		os.Exit(1)
@@ -145,4 +106,56 @@ func main() {
 
 	pool.Close()
 	slog.Info("shutdown")
+}
+
+func newLogger() *slog.Logger {
+	logLevel := getLoggerLevel(os.Getenv("LOG_LEVEL"))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
+	slog.SetDefault(logger)
+	return logger
+}
+
+func newPool(ctx context.Context) *pgxpool.Pool {
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		slog.Error("DB_DSN is not set")
+		os.Exit(1)
+	}
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		slog.Error("connect database", "err", err)
+		os.Exit(1)
+	}
+	return pool
+}
+
+func buildRouter(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (*gin.Engine, error) {
+	userRepo, err := user.New(pool)
+	if err != nil {
+		return nil, fmt.Errorf("create user repository: %w", err)
+	}
+
+	userService := userservice.New(userRepo)
+	userHandler := userhandler.New(userService, logger)
+
+	lotsRepo, err := lots2.New(pool)
+
+
+	lotsService := lots.NewService(lotsRepo)
+	lotsHandler := lots3.NewHandler(lotsService)
+
+	lotsService.StartScheduler(ctx, 5*time.Minute)
+
+	sessionRepo := session.New(pool)
+	authService := auth2.NewService(userRepo, sessionRepo)
+	authHandler := auth.NewHandler(authService)
+
+	mw := middleware.NewMiddleware(authService)
+
+	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler)
+	if err != nil {
+		return nil, fmt.Errorf("create router: %w", err)
+	}
+
+	return engine, nil
 }

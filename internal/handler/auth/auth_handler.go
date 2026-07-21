@@ -8,6 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	errorKey = "error"
+)
+
 type Handler interface {
 	Registration(c *gin.Context)
 	Login(c *gin.Context)
@@ -38,7 +42,7 @@ func NewHandler(authService auth.Service) Handler {
 func (h *handler) Registration(c *gin.Context) {
 	var request registerRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -65,7 +69,7 @@ func (h *handler) Registration(c *gin.Context) {
 func (h *handler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -92,7 +96,7 @@ func (h *handler) Login(c *gin.Context) {
 func (h *handler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -120,7 +124,7 @@ func (h *handler) Refresh(c *gin.Context) {
 func (h *handler) Logout(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -132,16 +136,16 @@ func (h *handler) Logout(c *gin.Context) {
 }
 
 type registerRequest struct {
-	Login string `json:"login" binding:"required"`
-	Pass  string `json:"password" binding:"required"`
+	Login string `binding:"required" json:"login"`
+	Pass  string `binding:"required" json:"password"`
 	Role  string `json:"role"`
 }
 
 type loginRequest struct {
-	Login string `json:"login" binding:"required"`
-	Pass  string `json:"password" binding:"required"`
+	Login string `binding:"required" json:"login"`
+	Pass  string `binding:"required" json:"password"`
 }
 
 type refreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `binding:"required" json:"refresh_token"`
 }
