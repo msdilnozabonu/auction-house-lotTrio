@@ -16,6 +16,7 @@ type Handler interface {
 	CloseExpiredLot(c *gin.Context)
 	CreateLot(c *gin.Context)
 	GetAll(c *gin.Context)
+	GetByID(c *gin.Context)
 	UpdateByID(c *gin.Context)
 	DeleteLots(c *gin.Context)
 }
@@ -50,6 +51,7 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 	}
 	response.RespondJSON(c, http.StatusOK, gin.H{"closed": count})
 }
+
 const messageKey = "message"
 
 // CreateLot     godoc
@@ -79,7 +81,7 @@ func (h *handler) CreateLot(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	err := h.lotsService.CreateLot(c.Request.Context(), req.Title, req.Description, req.StartPrice,
+	err := h.lotsService.CreateLot(c.Request.Context(), req.Title, req.Description, req.Category, req.StartPrice,
 		req.Photo, req.EndsAt, req.Status, sellerId)
 	if err != nil {
 		response.RespondError(c, err)
@@ -98,13 +100,55 @@ func (h *handler) CreateLot(c *gin.Context) {
 // @Failure      400
 // @Router       /lots [get]
 func (h *handler) GetAll(c *gin.Context) {
-	items, err := h.lotsService.GetAll(c.Request.Context())
+	minPrice, _ := strconv.ParseFloat(c.Query("minPrice"), 64)
+	maxPrice, _ := strconv.ParseFloat(c.Query("maxPrice"), 64)
+	page, _ := strconv.Atoi(c.Query("page"))
+	limit, _ := strconv.Atoi(c.Query("limit"))
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 15
+	}
+
+	filter := model.LotsFilter{
+		Search:   c.Query("search"),
+		Category: c.Query("category"),
+		MinPrice: minPrice,
+		MaxPrice: maxPrice,
+		Page:     page,
+		Limit:    limit,
+	}
+	items, total, err := h.lotsService.GetAll(c.Request.Context(), filter)
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, items)
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + limit - 1) / limit
+	}
+	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, Page: page, Limit: limit, TotalPages: totalPages})
+}
+
+func (h *handler) GetByID(c *gin.Context) {
+	id := c.Param("id")
+
+	lotID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	lot, err := h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	if err != nil {
+		h.logger.Error("get lot by id", "err", err)
+		response.RespondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, lot)
 }
 
 // UpdateByID  godoc
@@ -142,12 +186,12 @@ func (h *handler) UpdateByID(c *gin.Context) {
 		return
 	}
 
-
 	err = h.lotsService.UpdateById(c.Request.Context(), model.Lots{
 		ID:          IDint,
 		SellerID:    sellerId,
 		Title:       req.Title,
 		Description: req.Description,
+		Category:    req.Category,
 		StartPrice:  req.StartPrice,
 		Photo:       req.Photo,
 		EndAt:       req.EndsAt,
@@ -160,7 +204,6 @@ func (h *handler) UpdateByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot updated successfully!"})
 }
-
 
 // DeleteLots  godoc
 // @Summary Удаление лот по ID
@@ -190,7 +233,7 @@ func (h *handler) DeleteLots(c *gin.Context) {
 		return
 	}
 
-	err = h.lotsService.DeleteLots(c.Request.Context(), model.Lots{ID:IDint, SellerID: sellerId})
+	err = h.lotsService.DeleteLots(c.Request.Context(), model.Lots{ID: IDint, SellerID: sellerId})
 	if err != nil {
 		h.logger.Error("delete lots repository", "err", err)
 		response.RespondError(c, err)
@@ -199,10 +242,10 @@ func (h *handler) DeleteLots(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot deleted successfully!"})
 }
 
-
 type lotsRequest struct {
 	Title       string    `binding:"required" json:"title"`
 	Description string    `binding:"required" json:"description"`
+	Category    string    `binding:"required" json:"category"`
 	StartPrice  float64   `binding:"required" json:"startPrice"`
 	EndsAt      time.Time `binding:"required" json:"endsAt"`
 	Photo       string    `binding:"required" json:"photo"`
@@ -213,7 +256,16 @@ type updateLotRequest struct {
 	ID          int64     `json:"ID"`
 	Title       string    `binding:"required" json:"title"`
 	Description string    `binding:"required" json:"description"`
+	Category    string    `binding:"required" json:"category"`
 	StartPrice  float64   `binding:"required" json:"startPrice"`
 	Photo       string    `binding:"required" json:"photo"`
 	EndsAt      time.Time `binding:"required" json:"endsAt"`
+}
+
+type pagResponse struct {
+	Items      []model.Lots `json:"items"`
+	Page       int          `json:"page"`
+	Limit      int          `json:"limit"`
+	Total      int          `json:"total"`
+	TotalPages int          `json:"totalPages"`
 }
