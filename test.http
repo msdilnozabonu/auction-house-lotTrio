@@ -1,7 +1,3 @@
-### GET request to example server
-GET https://examples.http-client.intellij.net/get
-    ?generated-in=GoLand
-
 ###
 POST http://localhost:9999/api/v1/auth/register
 Content-Type: application/json
@@ -13,11 +9,11 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:8080/api/v1/auth/login
+POST http://localhost:9999/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "login": "Maftuna6",
+  "login": "Maftuna9",
   "password":"adminadmin",
   "role": "admin"
 }
@@ -54,3 +50,20 @@ Content-Type: application/json
 POST http://localhost:9999/api/v1/admin/close-expired
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+###
+POST http://localhost:9999/api/v1/lots/new
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ2NDI0OTAsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.FBq1ytkP0IAKRS_H1RAnn7J5JtgkYYwYVFNIhrPI4XA
+
+{
+  "title": "Iphone",
+  "description": "good phone",
+  "startPrice": 12000,
+  "photo": "https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg",
+  "endsAt": "2026-12-31T23:59:59Z",
+  "status": "active"
+}
+
+###
+GET http://localhost:9999/api/v1/lots
+Content-Type: application/json

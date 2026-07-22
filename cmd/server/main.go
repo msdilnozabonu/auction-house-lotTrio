@@ -2,21 +2,15 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
-	"errors"
-	"net/http"
-	"os/signal"
-	"syscall"
-
-	lots3 "auction-house-lotTrio/internal/handler/lots"
+	lots2 "auction-house-lotTrio/internal/handler/lots"
 	userhandler "auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
-
-	lots2 "auction-house-lotTrio/internal/repository/lots"
+	"auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
-	"auction-house-lotTrio/internal/service/lots"
+	lots3 "auction-house-lotTrio/internal/service/lots"
 	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
 	"fmt"
@@ -65,7 +59,7 @@ func main() {
 	}
 }
 
-func run () error {
+func run() error {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
 	}
@@ -149,14 +143,15 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	userService := userservice.New(userRepo)
 	userHandler := userhandler.New(userService, logger)
 
-	lotsRepo, err := lots2.New(pool)
+	lotsRepo, err := lots.New(pool)
 	if err != nil {
+    slog.Error("create lots repository", "err", err)
 		return nil, fmt.Errorf("create lots repository: %w", err)
 	}
 
 
-	lotsService := lots.NewService(lotsRepo)
-	lotsHandler := lots3.NewHandler(lotsService)
+	lotsService := lots3.NewService(lotsRepo)
+	lotsHandler := lots2.NewHandler(lotsService)
 
 	lotsService.StartScheduler(schedulerCtx, scheduler)
 
@@ -167,6 +162,7 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	mw := middleware.NewMiddleware(authService)
 
 	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler)
+
 	if err != nil {
 		return nil, fmt.Errorf("create router: %w", err)
 	}

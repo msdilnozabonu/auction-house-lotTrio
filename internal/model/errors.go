@@ -14,6 +14,9 @@ var (
 	ErrUserAlreadyExists = errors.New("user already exists")
 	ErrInvalidAuth       = errors.New("invalid login or password")
 	ErrUserNotFound      = errors.New("user not found")
+	ErrDatabase          = errors.New("database error")
+	ErrStartPrice        = errors.New("invalid start price")
+	ErrUnauthorized      = errors.New("unauthorized")
 
 	// Tokens
 	ErrInvalidToken    = errors.New("invalid or expired token")

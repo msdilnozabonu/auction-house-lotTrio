@@ -51,5 +51,10 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		adminGroup.POST("/close-expired", lotsHandler.CloseExpiredLot)
 	}
 
+	lotsGroup := api.Group("/lots")
+	{
+		lotsGroup.POST("/new", newMiddleware.Auth(), lotsHandler.CreateLot)
+		lotsGroup.GET("", lotsHandler.GetAll)
+	}
 	return engine, nil
 }
