@@ -27,16 +27,17 @@ func New(userService userservice.Service, logger *slog.Logger) Handler {
 }
 
 // Me godoc
-// @Summary      Информация о текущем пользователе
-// @Description  Возвращает данные авторизованного пользователя.
-// @Tags         user
-// @Produce      json
-// @Success      200
-// @Failure      401
-// @Failure      404
-// @Failure      500
-// @Security     BearerAuth
-// @Router       /me [get]
+//
+//	@Summary		Информация о текущем пользователе
+//	@Description	Возвращает данные авторизованного пользователя.
+//	@Tags			user
+//	@Produce		json
+//	@Success		200
+//	@Failure		401
+//	@Failure		404
+//	@Failure		500
+//	@Security		BearerAuth
+//	@Router			/me [get]
 func (h *handler) Me(c *gin.Context) {
 	v, ok := c.Get("user_id")
 	if !ok {

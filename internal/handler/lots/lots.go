@@ -33,15 +33,16 @@ func NewHandler(lotsService lots.Service) Handler {
 }
 
 // CloseExpiredLot godoc
-// @Summary      Закрыть просроченные лоты
-// @Description  Ручной запуск закрытия лотов с истёкшим дедлайном
-// @Tags         admin
-// @Produce      json
-// @Security     BearerAuth
-// @Success      200 {object} map[string]int
-// @Failure      401
-// @Failure      403
-// @Router       /admin/close-expired [post]
+//
+//	@Summary		Закрыть просроченные лоты
+//	@Description	Ручной запуск закрытия лотов с истёкшим дедлайном
+//	@Tags			admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]int
+//	@Failure		401
+//	@Failure		403
+//	@Router			/admin/close-expired [post]
 func (h *handler) CloseExpiredLot(c *gin.Context) {
 	count, err := h.lotsService.CloseExpiredLot(c.Request.Context())
 	if err != nil {
@@ -55,15 +56,17 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 const messageKey = "message"
 
 // CreateLot     godoc
-// @Summary      Создать лоты
-// @Description  Создает лоты в базу
-// @Tags         lots
-// @Produce      json
-// @Param		 input body lotsRequest true "Добавить лот"
-// @Success      201
-// @Failure      401
-// @Failure      403
-// @Router       /lots/new [post]
+//
+//	@Summary		Создать лоты
+//	@Description	Создает лоты в базу
+//	@Tags			lots
+//	@Produce		json
+//	@Param			input	body	lotsRequest	true	"Добавить лот"
+//	@Success		201
+//	@Failure		401
+//	@Failure		403
+//	@Security		BearerAuth
+//	@Router			/lots/new [post]
 func (h *handler) CreateLot(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -91,14 +94,20 @@ func (h *handler) CreateLot(c *gin.Context) {
 }
 
 // GetAll  godoc
-// @Summary Получение список лотов
-// @Description Метод возрвщает список активных лотов
-// @Tags         lots
-// @Produce      json
-// @Param		 input body lotsRequest true "Добавить лот"
-// @Success      200
-// @Failure      400
-// @Router       /lots [get]
+//
+//	@Summary		Получение список лотов
+//	@Description	Метод возрвщает список активных лотов
+//	@Tags			lots
+//	@Produce		json
+//	@Param			search		query	string	false	"Поиск"
+//	@Param			category	query	string	false	"Категория"
+//	@Param			minPrice	query	number	false	"Минимальная цена"
+//	@Param			maxPrice	query	number	false	"Максимальная цена"
+//	@Param			page		query	int		false	"Номер страницы"
+//	@Param			limit		query	int		false	"Количество элементов"
+//	@Success		200
+//	@Failure		400
+//	@Router			/lots [get]
 func (h *handler) GetAll(c *gin.Context) {
 	minPrice, _ := strconv.ParseFloat(c.Query("minPrice"), 64)
 	maxPrice, _ := strconv.ParseFloat(c.Query("maxPrice"), 64)
@@ -132,6 +141,17 @@ func (h *handler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, Page: page, Limit: limit, TotalPages: totalPages})
 }
 
+// GetByID godoc
+//
+//	@Summary		Получение лота по ID
+//	@Description	Returns a lot by its ID
+//	@Tags			lots
+//	@Produce		json
+//	@Param			id	path	int	true	"Лот ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Router			/lots/:id [get]
 func (h *handler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 
@@ -152,15 +172,19 @@ func (h *handler) GetByID(c *gin.Context) {
 }
 
 // UpdateByID  godoc
-// @Summary Получение лот по ID
-// @Description Получает лот по ID и меняет его значение
-// @Tags         lots
-// @Produce      json
-// @Param		 input body updateLotRequest true "Изменит лот"
-// @Success      200
-// @Failure      401
-// @Failure      403
-// @Router       /lots/:id [put]
+//
+//	@Summary		Получение лот по ID
+//	@Description	Получает лот по ID и меняет его значение
+//	@Tags			lots
+//	@Produce		json
+//	@Accept			json
+//	@Param			input	body	updateLotRequest	true	"Изменит лот"
+//	@Param			id		path	int					true	"ID лота"
+//	@Success		200
+//	@Failure		401
+//	@Failure		403
+//	@Security		BearerAuth
+//	@Router			/lots/:id [put]
 func (h *handler) UpdateByID(c *gin.Context) {
 	var req updateLotRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -206,14 +230,16 @@ func (h *handler) UpdateByID(c *gin.Context) {
 }
 
 // DeleteLots  godoc
-// @Summary Удаление лот по ID
-// @Description Получает лот по ID и удаляет его
-// @Tags         lots
-// @Produce      json
-// @Success      200
-// @Failure      401
-// @Failure      403
-// @Router       /lots/:id [delete]
+//
+//	@Summary		Удаление лот по ID
+//	@Description	Получает лот по ID и удаляет его
+//	@Tags			lots
+//	@Produce		json
+//	@Success		200
+//	@Failure		401
+//	@Failure		403
+//	@Security		BearerAuth
+//	@Router			/lots/:id [delete]
 func (h *handler) DeleteLots(c *gin.Context) {
 	id := c.Param("id")
 	IDint, err := strconv.ParseInt(id, 10, 64)
