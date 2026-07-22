@@ -167,7 +167,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Создаёт пользователя в базе",
+                "description": "Создаёт пользователя в базу",
                 "consumes": [
                     "application/json"
                 ],
@@ -198,6 +198,135 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/lots": {
+            "get": {
+                "description": "Метод возрвщает список активных лотов",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Получение список лотов",
+                "parameters": [
+                    {
+                        "description": "Добавить лот",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.lotsRequest"
+                        }
+                    },
+                    {
+                        "description": "Добавить лот",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.lotsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    }
+                }
+            }
+        },
+        "/lots/:id": {
+            "put": {
+                "description": "Получает лот по ID и меняет его значение",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Получение лот по ID",
+                "parameters": [
+                    {
+                        "description": "Изменит лот",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.updateLotRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Получает лот по ID и удаляет его",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Удаление лот по ID",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            }
+        },
+        "/lots/new": {
+            "post": {
+                "description": "Создает лоты в базу",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Создать лоты",
+                "parameters": [
+                    {
+                        "description": "Добавить лот",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.lotsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 }
             }
@@ -275,6 +404,67 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "lots.lotsRequest": {
+            "type": "object",
+            "required": [
+                "description",
+                "endsAt",
+                "photo",
+                "startPrice",
+                "status",
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "endsAt": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "startPrice": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "lots.updateLotRequest": {
+            "type": "object",
+            "required": [
+                "description",
+                "endsAt",
+                "photo",
+                "startPrice",
+                "title"
+            ],
+            "properties": {
+                "ID": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "endsAt": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "startPrice": {
+                    "type": "number"
+                },
+                "title": {
                     "type": "string"
                 }
             }
