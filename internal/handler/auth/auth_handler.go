@@ -30,7 +30,7 @@ func NewHandler(authService auth.Service) Handler {
 // Registration godoc
 //
 //	@Summary		Регистрация пользователя
-//	@Description	Создаёт пользователя в базе
+//	@Description	Создаёт пользователя в базу
 //	@Tags			auth
 //	@Accept			json
 //	@Produce		json

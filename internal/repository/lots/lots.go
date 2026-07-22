@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,10 +13,10 @@ import (
 const (
 	lotExpired = `SELECT id FROM lots WHERE status = 'live' AND ends_at < $1`
 	closeLot   = `UPDATE lots SET status = 'closed' WHERE id = $1 AND status = 'live'`
-	selectByID = `SELECT id, title, description, start_price, current_price, current_winner_id, 
-       status, starts_at, ends_at, photo_path FROM lots WHERE id = $1`
-	selectAll  = `SELECT id, title, description, start_price, current_price, status, starts_at, 
-       ends_at, photo_path FROM lots WHERE status = 'live' ORDER BY id`
+	selectByID = `SELECT id, title, description, start_price, current_price, 
+       status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1`
+	selectAll = `SELECT id, title, description, start_price, current_price, status, starts_at, 
+       ends_at, photo_path FROM lots WHERE status = 'active' ORDER BY id`
 )
 
 type Repo interface {
@@ -24,7 +25,9 @@ type Repo interface {
 	CreateLot(ctx context.Context, title, description string, startPrice float64, photo string,
 		endsAt time.Time, status string, sellerID int64, currentPrice float64) error
 	GetAll(ctx context.Context) ([]model.Lots, error)
-	UpdateLot(ctx context.Context, id int64, status string, currentPrice int64) error
+	GetById(ctx context.Context, id int64) (*model.Lots, error)
+	UpdateLot(ctx context.Context, l model.Lots) error
+	DeleteLots(ctx context.Context, id int64) error
 }
 
 type repo struct {
@@ -97,14 +100,36 @@ func (r *repo) GetAll(ctx context.Context) ([]model.Lots, error) {
 	return out, nil
 }
 
-// UpdateLot в процессе.
-func (r *repo) UpdateLot(ctx context.Context, id int64, status string, currentPrice int64) error {
-	err := r.repo.QueryRow(ctx, `UPDATE lots SET status = $1, current_price = $2 WHERE id = $3`,
-		status, currentPrice, id).Scan(&id, &status, &currentPrice)
+func (r *repo) GetById(ctx context.Context, id int64) (*model.Lots, error) {
+	var getLot model.Lots
+	err := r.repo.QueryRow(ctx, selectByID, id).
+		Scan(&getLot.ID, &getLot.Title, &getLot.Description, &getLot.StartPrice, &getLot.CurrentPrice,
+			&getLot.Status, &getLot.StartAt, &getLot.EndAt, &getLot.Photo, &getLot.SellerID)
 	if err != nil {
-		return model.ErrDatabase
+		slog.Error("get lots by id", "err", err)
+		return nil, fmt.Errorf("get lots: %w", err)
+	}
+	return &getLot, nil
+}
+
+func (r *repo) UpdateLot(ctx context.Context, l model.Lots) error {
+	err := r.repo.QueryRow(ctx, `UPDATE lots SET title = $1, description = $2, start_price = $3, 
+                photo_path = $4, ends_at = $5 WHERE id = $6 RETURNING id, seller_id, title, 
+                description, start_price, current_price, status, photo_path, ends_at`,
+		l.Title, l.Description, l.StartPrice, l.Photo, l.EndAt, l.ID).
+		Scan(&l.ID, &l.SellerID, &l.Title, &l.Description, &l.StartPrice, &l.CurrentPrice, &l.Status, &l.Photo, &l.EndAt)
+	if err != nil {
+		slog.Error("update lots by id", "err", err)
+		return fmt.Errorf("update lots: %w", err)
 	}
 	return nil
 }
 
-func (r *repo) DeleteLots(ctx context.Context, id int64) {}
+func (r *repo) DeleteLots(ctx context.Context, id int64) error {
+	_, err := r.repo.Exec(ctx, `DELETE FROM lots WHERE id = $1`, id)
+	if err != nil {
+		slog.Error("delete lots by id", "err", err)
+		return fmt.Errorf("delete lots: %w", err)
+	}
+	return nil
+}
