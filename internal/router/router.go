@@ -17,7 +17,7 @@ import (
 func New(ctx context.Context, pool *pgxpool.Pool,
 	authHandler auth.Handler, userHandler user.Handler,
 	newMiddleware middleware.Middleware,
-	lotHandler lots2.LotHandler) (*gin.Engine, error) {
+	lotHandler lots2.Handler) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 
@@ -45,6 +45,12 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		authGroup.POST("/logout", newMiddleware.Auth(), authHandler.Logout)
 	}
 
+	adminGroup := api.Group("/admin")
+	adminGroup.Use(newMiddleware.Auth(), middleware.RequireRole("admin"))
+	{
+		adminGroup.POST("/close-expired", lotHandler.CloseExpiredLot)
+	}
+
 	lotsGroup := api.Group("/lots")
 	{
 		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
@@ -52,3 +58,4 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	}
 	return engine, nil
 }
+

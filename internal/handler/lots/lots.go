@@ -11,20 +11,46 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type LotHandler interface {
+
+type Handler interface {
+	CloseExpiredLot(c *gin.Context)
 	CreateLot(c *gin.Context)
 	GetAll(c *gin.Context)
 }
 
-type lotsHandler struct {
-	lotsService lots.LotService
+type handler struct {
+	lotsService lots.Service
+	logger      *slog.Logger
 }
 
-func NewLotHandler(lotsService lots.LotService) LotHandler {
-	return &lotsHandler{lotsService: lotsService}
+func NewHandler(lotsService lots.Service) Handler {
+	return &handler{
+		lotsService: lotsService,
+		logger:      slog.With("module", "lots")}
 }
 
-func (l *lotsHandler) CreateLot(c *gin.Context) {
+// CloseExpiredLot godoc
+// @Summary      Закрыть просроченные лоты
+// @Description  Ручной запуск закрытия лотов с истёкшим дедлайном
+// @Tags         admin
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} map[string]int
+// @Failure      401
+// @Failure      403
+// @Router       /admin/close-expired [post]
+func (h *handler) CloseExpiredLot(c *gin.Context) {
+	count, err := h.lotsService.CloseExpiredLot(c.Request.Context())
+	if err != nil {
+		h.logger.Error("CloseExpiredLot: ", "error: ", err)
+		response.RespondError(c, err)
+		return
+	}
+	response.RespondJSON(c, http.StatusOK, gin.H{"closed": count})
+}
+
+
+func (h *handler) CreateLot(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
 		response.RespondError(c, model.ErrUnauthorized)
@@ -41,7 +67,7 @@ func (l *lotsHandler) CreateLot(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	err := l.lotsService.CreateLot(c.Request.Context(), req.Title, req.Description, req.StartPrice,
+	err := h.lotsService.CreateLot(c.Request.Context(), req.Title, req.Description, req.StartPrice,
 		req.Photo, req.EndsAt, req.Status, sellerId)
 	if err != nil {
 		response.RespondError(c, err)
@@ -50,10 +76,10 @@ func (l *lotsHandler) CreateLot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Lot created successfully!"})
 }
 
-func (l *lotsHandler) GetAll(c *gin.Context) {
-	items, err := l.lotsService.GetAll(c.Request.Context())
+func (h *handler) GetAll(c *gin.Context) {
+	items, err := h.lotsService.GetAll(c.Request.Context())
 	if err != nil {
-		slog.Error("get lots repository", "err", err)
+		h.logger.Error("get lots repository", "err", err)
 		response.RespondError(c, err)
 		return
 	}

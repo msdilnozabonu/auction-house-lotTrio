@@ -35,6 +35,27 @@ info:
   title: AuctionHouse API
   version: "1.0"
 paths:
+  /admin/close-expired:
+    post:
+      description: Ручной запуск закрытия лотов с истёкшим дедлайном
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Закрыть просроченные лоты
+      tags:
+      - admin
   /auth/login:
     post:
       consumes:

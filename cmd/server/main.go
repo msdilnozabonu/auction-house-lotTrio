@@ -29,7 +29,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const shutdownTime = 5
+const (
+	shutdownTime = 5
+	scheduler = 5*time.Minute
+)
 
 func getLoggerLevel(level string) slog.Level {
 	switch level {
@@ -54,6 +57,13 @@ func getLoggerLevel(level string) slog.Level {
 // @in							header
 // @name						Authorization
 func main() {
+	if err := run(); err != nil {
+		slog.Error("run", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run () error {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
 	}
@@ -61,11 +71,13 @@ func main() {
 	ctx := context.Background()
 	pool := newPool(ctx)
 
-	engine, err := buildRouter(ctx, pool, logger)
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
+	engine, err := buildRouter(ctx, sigCtx, pool, logger)
 	if err != nil {
 		slog.Error("create router", "err", err)
-		os.Exit(1)
+		return fmt.Errorf("create router: %w", err)
 	}
 
 	port := os.Getenv("PORT")
@@ -88,8 +100,6 @@ func main() {
 
 	slog.Info("server started", "port", port)
 
-	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	<-sigCtx.Done()
 	slog.Info("shutdown signal received")
@@ -105,8 +115,8 @@ func main() {
 
 	pool.Close()
 	slog.Info("shutdown")
+	return nil
 }
-
 func newLogger() *slog.Logger {
 	logLevel := getLoggerLevel(os.Getenv("LOG_LEVEL"))
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
@@ -128,7 +138,7 @@ func newPool(ctx context.Context) *pgxpool.Pool {
 	return pool
 }
 
-func buildRouter(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (*gin.Engine, error) {
+func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (*gin.Engine, error) {
 	userRepo, err := user.New(pool)
 	if err != nil {
 		return nil, fmt.Errorf("create user repository: %w", err)
@@ -143,13 +153,14 @@ func buildRouter(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (
 
 	mw := middleware.NewMiddleware(authService)
 
-	lotsRepo, err := lots.NewLots(pool)
+	lotsRepo, err := lots.New(pool)
 	if err != nil {
 		slog.Error("create lots repository", "err", err)
 		os.Exit(1)
 	}
-	lotsService := lots3.NewLotsService(lotsRepo)
-	lotsHandler := lots2.NewLotHandler(lotsService)
+	lotsService := lots3.NewService(lotsRepo)
+	lotsHandler := lots2.NewHandler(lotsService)
+	lotsService.StartScheduler(schedulerCtx, scheduler)
 	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler)
 
 	if err != nil {

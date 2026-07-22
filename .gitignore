@@ -33,3 +33,5 @@ go.work.sum
 
 .env
 docker-compose.yml
+coverage
+
