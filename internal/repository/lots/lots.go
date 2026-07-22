@@ -102,7 +102,7 @@ func (r *repo) UpdateLot(ctx context.Context, id int64, status string, currentPr
 	err := r.repo.QueryRow(ctx, `UPDATE lots SET status = $1, current_price = $2 WHERE id = $3`,
 		status, currentPrice, id).Scan(&id, &status, &currentPrice)
 	if err != nil {
-		return model.ErrDatabase
+		return fmt.Errorf("%w: %v", model.ErrDatabase, err)
 	}
 	return nil
 }

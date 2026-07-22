@@ -79,7 +79,7 @@ func (h *handler) CreateLot(c *gin.Context) {
 func (h *handler) GetAll(c *gin.Context) {
 	items, err := h.lotsService.GetAll(c.Request.Context())
 	if err != nil {
-		slog.Error("get lots repository", "err", err)
+		h.logger.Error("get lots repository", "err", err)
 		response.RespondError(c, err)
 		return
 	}
