@@ -160,6 +160,7 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	}
 	lotsService := lots3.NewService(lotsRepo)
 	lotsHandler := lots2.NewHandler(lotsService)
+	lotsService.StartScheduler(schedulerCtx, scheduler)
 	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler)
 
 	if err != nil {
