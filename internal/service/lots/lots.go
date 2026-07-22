@@ -12,9 +12,10 @@ import (
 type Service interface {
 	CloseExpiredLot(ctx context.Context) (int, error)
 	StartScheduler(ctx context.Context, interval time.Duration)
-	CreateLot(ctx context.Context, title, description string, startPrice float64,
+	CreateLot(ctx context.Context, title, description, category string, startPrice float64,
 		photo string, endsAt time.Time, status string, sellerID int64) error
-	GetAll(ctx context.Context) ([]model.Lots, error)
+	GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
+	GetByID(ctx context.Context, p model.Lots) (*model.Lots, error)
 	UpdateById(ctx context.Context, p model.Lots) error
 	DeleteLots(ctx context.Context, p model.Lots) error
 }
@@ -73,7 +74,7 @@ func (s *service) StartScheduler(ctx context.Context, interval time.Duration) {
 	}()
 }
 
-func (s *service) CreateLot(ctx context.Context, title, description string,
+func (s *service) CreateLot(ctx context.Context, title, description, category string,
 	startPrice float64, photo string,
 	endsAt time.Time, status string, sellerID int64) error {
 	if startPrice <= 0 {
@@ -85,27 +86,38 @@ func (s *service) CreateLot(ctx context.Context, title, description string,
 	}
 
 	currentPrice := startPrice
-	err := s.lotsRepo.CreateLot(ctx, title, description, startPrice, photo, endsAt, status, sellerID, currentPrice)
+	err := s.lotsRepo.CreateLot(ctx, title, description, category,
+		startPrice, photo, endsAt, status, sellerID, currentPrice)
 	if err != nil {
+		s.logger.Error("create lot", "err", err)
 		return fmt.Errorf("create lot: %w", err)
 	}
 	return nil
 }
 
-func (s *service) GetAll(ctx context.Context) ([]model.Lots, error) {
-	items, err := s.lotsRepo.GetAll(ctx)
+func (s *service) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error) {
+	items, total, err := s.lotsRepo.GetAll(ctx, filter)
 	if err != nil {
 		s.logger.Error("get all lots", "err", err)
-		return nil, fmt.Errorf("get all lots: %w", err)
+		return nil, 0, fmt.Errorf("get all lots: %w", err)
 	}
-	return items, nil
+	return items, total, nil
+}
+
+func (s *service) GetByID(ctx context.Context, p model.Lots) (*model.Lots, error) {
+	lot, err := s.lotsRepo.GetById(ctx, p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get lot by id: %w", err)
+	}
+
+	return lot, nil
 }
 
 func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
 	lot, err := s.lotsRepo.GetById(ctx, p.ID)
 	if err != nil {
-		s.logger.Error("get all lots", "err", err)
-		return fmt.Errorf("get all lots: %w", err)
+		s.logger.Error("get lot by id", "err", err)
+		return fmt.Errorf("get lot by id: %w", err)
 	}
 
 	if p.SellerID != lot.SellerID {
@@ -122,8 +134,8 @@ func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
 
 	err = s.lotsRepo.UpdateLot(ctx, p)
 	if err != nil {
-		s.logger.Error("update lots", "err", err)
-		return fmt.Errorf("update lots: %w", err)
+		s.logger.Error("update lot", "err", err)
+		return fmt.Errorf("update lot: %w", err)
 	}
 
 	return nil
@@ -132,8 +144,8 @@ func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
 func (s *service) DeleteLots(ctx context.Context, p model.Lots) error {
 	lot, err := s.lotsRepo.GetById(ctx, p.ID)
 	if err != nil {
-		s.logger.Error("get all lots", "err", err)
-		return fmt.Errorf("get all lots: %w", err)
+		s.logger.Error("get lot by id", "err", err)
+		return fmt.Errorf("get lot by id: %w", err)
 	}
 
 	if p.SellerID != lot.SellerID {
