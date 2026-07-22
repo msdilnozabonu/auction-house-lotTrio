@@ -15,12 +15,15 @@ type Service interface {
 	CreateLot(ctx context.Context, title, description string, startPrice float64,
 		photo string, endsAt time.Time, status string, sellerID int64) error
 	GetAll(ctx context.Context) ([]model.Lots, error)
+	UpdateById(ctx context.Context, p model.Lots) error
+	DeleteLots(ctx context.Context, p model.Lots) error
 }
 
 type service struct {
 	lotsRepo lots.Repo
 	logger   *slog.Logger
 }
+
 func NewService(lotsRepo lots.Repo) Service {
 	return &service{
 		lotsRepo: lotsRepo,
@@ -96,4 +99,52 @@ func (s *service) GetAll(ctx context.Context) ([]model.Lots, error) {
 		return nil, fmt.Errorf("get all lots: %w", err)
 	}
 	return items, nil
+}
+
+func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
+	lot, err := s.lotsRepo.GetById(ctx, p.ID)
+	if err != nil {
+		s.logger.Error("get all lots", "err", err)
+		return fmt.Errorf("get all lots: %w", err)
+	}
+
+	if p.SellerID != lot.SellerID {
+		return model.ErrForbidden
+	}
+
+	if p.StartPrice <= 0 {
+		return model.ErrStartPrice
+	}
+
+	if !p.EndAt.After(time.Now()) {
+		return model.ErrClosed
+	}
+
+	err = s.lotsRepo.UpdateLot(ctx, p)
+	if err != nil {
+		s.logger.Error("update lots", "err", err)
+		return fmt.Errorf("update lots: %w", err)
+	}
+
+	return nil
+}
+
+func (s *service) DeleteLots(ctx context.Context, p model.Lots) error {
+	lot, err := s.lotsRepo.GetById(ctx, p.ID)
+	if err != nil {
+		s.logger.Error("get all lots", "err", err)
+		return fmt.Errorf("get all lots: %w", err)
+	}
+
+	if p.SellerID != lot.SellerID {
+		return model.ErrForbidden
+	}
+
+	err = s.lotsRepo.DeleteLots(ctx, p.ID)
+	if err != nil {
+		s.logger.Error("delete lots", "err", err)
+		return fmt.Errorf("delete lots: %w", err)
+	}
+
+	return nil
 }
