@@ -2,26 +2,24 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
-	"errors"
-	"net/http"
-	"os/signal"
-	"syscall"
-
-	lots3 "auction-house-lotTrio/internal/handler/lots"
+	lots2 "auction-house-lotTrio/internal/handler/lots"
 	userhandler "auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
-
-	lots2 "auction-house-lotTrio/internal/repository/lots"
+	"auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
-	"auction-house-lotTrio/internal/service/lots"
+	lots3 "auction-house-lotTrio/internal/service/lots"
 	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	_ "auction-house-lotTrio/internal/docs"
@@ -149,24 +147,21 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	userService := userservice.New(userRepo)
 	userHandler := userhandler.New(userService, logger)
 
-	lotsRepo, err := lots2.New(pool)
-	if err != nil {
-		return nil, fmt.Errorf("create lots repository: %w", err)
-	}
-
-
-	lotsService := lots.NewService(lotsRepo)
-	lotsHandler := lots3.NewHandler(lotsService)
-
-	lotsService.StartScheduler(schedulerCtx, scheduler)
-
 	sessionRepo := session.New(pool)
 	authService := auth2.NewService(userRepo, sessionRepo)
 	authHandler := auth.NewHandler(authService)
 
 	mw := middleware.NewMiddleware(authService)
 
+	lotsRepo, err := lots.New(pool)
+	if err != nil {
+		slog.Error("create lots repository", "err", err)
+		os.Exit(1)
+	}
+	lotsService := lots3.NewService(lotsRepo)
+	lotsHandler := lots2.NewHandler(lotsService)
 	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler)
+
 	if err != nil {
 		return nil, fmt.Errorf("create router: %w", err)
 	}

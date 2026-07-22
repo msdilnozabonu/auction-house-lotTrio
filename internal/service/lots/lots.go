@@ -1,6 +1,7 @@
 package lots
 
 import (
+	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/repository/lots"
 	"context"
 	"fmt"
@@ -11,13 +12,15 @@ import (
 type Service interface {
 	CloseExpiredLot(ctx context.Context) (int, error)
 	StartScheduler(ctx context.Context, interval time.Duration)
+	CreateLot(ctx context.Context, title, description string, startPrice float64,
+		photo string, endsAt time.Time, status string, sellerID int64) error
+	GetAll(ctx context.Context) ([]model.Lots, error)
 }
 
 type service struct {
 	lotsRepo lots.Repo
 	logger   *slog.Logger
 }
-
 func NewService(lotsRepo lots.Repo) Service {
 	return &service{
 		lotsRepo: lotsRepo,
@@ -65,4 +68,32 @@ func (s *service) StartScheduler(ctx context.Context, interval time.Duration) {
 			}
 		}
 	}()
+}
+
+func (s *service) CreateLot(ctx context.Context, title, description string,
+	startPrice float64, photo string,
+	endsAt time.Time, status string, sellerID int64) error {
+	if startPrice <= 0 {
+		return model.ErrStartPrice
+	}
+
+	if !endsAt.After(time.Now()) {
+		return model.ErrClosed
+	}
+
+	currentPrice := startPrice
+	err := s.lotsRepo.CreateLot(ctx, title, description, startPrice, photo, endsAt, status, sellerID, currentPrice)
+	if err != nil {
+		return fmt.Errorf("create lot: %w", err)
+	}
+	return nil
+}
+
+func (s *service) GetAll(ctx context.Context) ([]model.Lots, error) {
+	items, err := s.lotsRepo.GetAll(ctx)
+	if err != nil {
+		s.logger.Error("get all lots", "err", err)
+		return nil, fmt.Errorf("get all lots: %w", err)
+	}
+	return items, nil
 }

@@ -2,7 +2,7 @@ package router
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
-	"auction-house-lotTrio/internal/handler/lots"
+	lots2 "auction-house-lotTrio/internal/handler/lots"
 	"auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
 	"context"
@@ -17,7 +17,7 @@ import (
 func New(ctx context.Context, pool *pgxpool.Pool,
 	authHandler auth.Handler, userHandler user.Handler,
 	newMiddleware middleware.Middleware,
-	lotsHandler lots.Handler) (*gin.Engine, error) {
+	lotHandler lots2.Handler) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 
@@ -48,8 +48,14 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	adminGroup := api.Group("/admin")
 	adminGroup.Use(newMiddleware.Auth(), middleware.RequireRole("admin"))
 	{
-		adminGroup.POST("/close-expired", lotsHandler.CloseExpiredLot)
+		adminGroup.POST("/close-expired", lotHandler.CloseExpiredLot)
 	}
 
+	lotsGroup := api.Group("/lots")
+	{
+		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
+		lotsGroup.GET("", lotHandler.GetAll)
+	}
 	return engine, nil
 }
+

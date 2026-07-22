@@ -3,12 +3,16 @@ package model
 import "time"
 
 type Lots struct {
-	ID           int
-	SellerID     int
+	ID           int64
+	SellerID     int64
 	Title        string
-	StartPrice   int
-	CurrentPrice int
+	Description  string
+	StartPrice   float64
+	CurrentPrice float64
+	WinnerID     int64
 	Status       string
-	StartDate    time.Time
-	EndDate      time.Time
+	Photo        string
+	StartAt      time.Time
+	EndAt        time.Time
+	CreatedAt    time.Time
 }
