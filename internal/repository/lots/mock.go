@@ -36,6 +36,13 @@ func (m *MockRepo) GetById(ctx context.Context, id int64) (*model.Lots, error) {
 	return args.Get(resultIndex).(*model.Lots), args.Error(errorIndex)
 }
 
+func (m *MockRepo) GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error) {
+	args := m.Called(ctx, id)
+
+	lot, _ := args.Get(resultIndex).(*model.Lots)
+	return lot, args.Error(errorIndex)
+}
+
 func (m *MockRepo) UpdateLot(ctx context.Context, l model.Lots) error {
 	args := m.Called(ctx, l)
 	return args.Error(resultIndex)

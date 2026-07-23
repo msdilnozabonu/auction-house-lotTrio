@@ -16,6 +16,7 @@ type Service interface {
 		photo string, endsAt time.Time, status string, sellerID int64) error
 	GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 	GetByID(ctx context.Context, p model.Lots) (*model.Lots, error)
+	GetByIDForBid(ctx context.Context, p model.Lots) (*model.Lots, error)
 	UpdateById(ctx context.Context, p model.Lots) error
 	UpdateStatus(ctx context.Context, sellerID, id int64, status string) error
 	DeleteLots(ctx context.Context, p model.Lots) error
@@ -107,6 +108,15 @@ func (s *service) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.
 
 func (s *service) GetByID(ctx context.Context, p model.Lots) (*model.Lots, error) {
 	lot, err := s.lotsRepo.GetById(ctx, p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get lot by id: %w", err)
+	}
+
+	return lot, nil
+}
+
+func (s *service) GetByIDForBid(ctx context.Context, p model.Lots) (*model.Lots, error) {
+	lot, err := s.lotsRepo.GetByIdForBid(ctx, p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get lot by id: %w", err)
 	}

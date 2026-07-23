@@ -109,6 +109,7 @@ func (h *handler) CreateLot(c *gin.Context) {
 //	@Param			limit		query	int		false	"Количество элементов"
 //	@Success		200
 //	@Failure		400
+//	@Security		BearerAuth
 //	@Router			/lots [get]
 func (h *handler) GetAll(c *gin.Context) {
 	minPrice, _ := strconv.ParseFloat(c.Query("minPrice"), 64)
@@ -153,6 +154,7 @@ func (h *handler) GetAll(c *gin.Context) {
 //	@Success		200
 //	@Failure		400
 //	@Failure		404
+//	@Security		BearerAuth
 //	@Router			/lots/:id [get]
 func (h *handler) GetByID(c *gin.Context) {
 	id := c.Param("id")
@@ -163,7 +165,13 @@ func (h *handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	lot, err := h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	role := c.GetString("role")
+	var lot *model.Lots
+	if role == "bidder" {
+		lot, err = h.lotsService.GetByIDForBid(c.Request.Context(), model.Lots{ID: lotID})
+	} else {
+		lot, err = h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	}
 	if err != nil {
 		h.logger.Error("get lot by id", "err", err)
 		response.RespondError(c, err)
