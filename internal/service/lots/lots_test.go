@@ -95,28 +95,28 @@ func TestLotsService_CreateLot(t *testing.T) {
 	m := new(lots.MockRepo)
 	t.Run("success", func(t *testing.T) {
 		m.On("CreateLot", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-			mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 
 		svc := NewService(m)
-		err := svc.CreateLot(t.Context(), "Phone", "good phone", 12000,
-			"https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg", time.Now().Add(24*time.Hour), "active", int64(1))
+		err := svc.CreateLot(t.Context(), "Phone", "good phone", "electronics", 12000,
+			"https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg", time.Now().Add(24*time.Hour), "live", int64(1))
 		require.NoError(t, err)
 		m.AssertExpectations(t)
 	})
 
 	t.Run("invalid price", func(t *testing.T) {
 		svc := NewService(m)
-		err := svc.CreateLot(t.Context(), "Phone", "good phone", 0,
-			"https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg", time.Now().Add(24*time.Hour), "active", int64(1))
+		err := svc.CreateLot(t.Context(), "Phone", "good phone", "electronics", 0,
+			"https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg", time.Now().Add(24*time.Hour), "live", int64(1))
 		require.Error(t, err)
 		require.Equal(t, err, model.ErrStartPrice)
 	})
 
 	t.Run("ends at in the past", func(t *testing.T) {
 		svc := NewService(m)
-		err := svc.CreateLot(t.Context(), "Phone", "good phone", 12000,
-			"https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg", time.Now().Add(-24*time.Hour), "active", int64(1))
+		err := svc.CreateLot(t.Context(), "Phone", "good phone", "electronics", 12000,
+			"https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg", time.Now().Add(-24*time.Hour), "live", int64(1))
 		require.Error(t, err)
 		require.Equal(t, err, model.ErrClosed)
 	})
@@ -124,13 +124,14 @@ func TestLotsService_CreateLot(t *testing.T) {
 
 func TestLotsService_GetAll(t *testing.T) {
 	m := new(lots.MockRepo)
-		m.On("GetAll", mock.Anything).
-			Return([]model.Lots{
-				{ID: 1},
-				{Title: "test1"},
-			}, nil)
-		svc := NewService(m)
-		items, err := svc.GetAll(t.Context())
-		require.NoError(t, err)
-		require.Len(t, items, 2)
+	m.On("GetAll", mock.Anything, mock.Anything).
+		Return([]model.Lots{
+			{ID: 1},
+			{Title: "test1"},
+		}, 2, nil)
+	svc := NewService(m)
+	items, total, err := svc.GetAll(t.Context(), model.LotsFilter{})
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	require.Equal(t, 2, total)
 }

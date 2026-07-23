@@ -62,7 +62,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ3MjU4M
   "startPrice": 12000,
   "photo": "https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg",
   "endsAt": "2026-12-31T23:59:59Z",
-  "status": "active"
+  "status": "live"
 }
 
 ###

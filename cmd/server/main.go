@@ -31,7 +31,7 @@ import (
 
 const (
 	shutdownTime = 5
-	scheduler = 5*time.Minute
+	scheduler    = 5 * time.Minute
 )
 
 func getLoggerLevel(level string) slog.Level {
@@ -63,7 +63,7 @@ func main() {
 	}
 }
 
-func run () error {
+func run() error {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found", "err", err)
 	}
@@ -99,7 +99,6 @@ func run () error {
 	}()
 
 	slog.Info("server started", "port", port)
-
 
 	<-sigCtx.Done()
 	slog.Info("shutdown signal received")
