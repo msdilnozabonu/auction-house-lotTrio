@@ -7,12 +7,17 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
-	lotExpired = `SELECT id FROM lots WHERE status = 'live' AND ends_at < $1`
-	closeLot   = `UPDATE lots SET status = 'closed' WHERE id = $1 AND status = 'live'`
+	lotExpired = `SELECT id FROM lots WHERE status = 'active' AND ends_at < $1`
+	closeLot   = `UPDATE lots 
+	SET status = 'closed',
+	    current_winner_id = (SELECT bidder_id FROM bids WHERE lot_id = $1
+		ORDER BY amount DESC, created_at ASC LIMIT 1)
+	WHERE id = $1 AND status = 'active'`
 	selectByID = `SELECT id, title, description, start_price, current_price, 
        status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1`
 	selectAll = `SELECT id, title, description, start_price, current_price, status, starts_at, 
@@ -60,9 +65,22 @@ func (r *repo) FindExpiredLot(ctx context.Context, now time.Time) ([]int64, erro
 }
 
 func (r *repo) CloseLot(ctx context.Context, id int64) (bool, error) {
-	tags, err := r.repo.Exec(ctx, closeLot, id)
+	tx, err := r.repo.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(tx, ctx)
+	tags, err := tx.Exec(ctx, closeLot, id)
 	if err != nil {
 		return false, fmt.Errorf("close lot: %w", err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("commit transaction: %w", err)
 	}
 	return tags.RowsAffected() > 0, nil
 }
