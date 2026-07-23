@@ -1,3 +1,4 @@
+//nolint:wrapcheck
 package bid
 
 import (
