@@ -204,6 +204,11 @@ const docTemplate = `{
         },
         "/lots": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Метод возрвщает список активных лотов",
                 "produces": [
                     "application/json"
@@ -262,6 +267,11 @@ const docTemplate = `{
         },
         "/lots/:id": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns a lot by its ID",
                 "produces": [
                     "application/json"
@@ -455,6 +465,31 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden"
+                    }
+                }
+            }
+        },
+        "/lots/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Меняет статус лота draft→live→closed-\u003ecancelled",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Смена статуса",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 }
             }

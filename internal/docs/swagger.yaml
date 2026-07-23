@@ -245,6 +245,8 @@ paths:
           description: OK
         "400":
           description: Bad Request
+      security:
+      - BearerAuth: []
       summary: Получение список лотов
       tags:
       - lots
@@ -282,6 +284,8 @@ paths:
           description: Bad Request
         "404":
           description: Not Found
+      security:
+      - BearerAuth: []
       summary: Получение лота по ID
       tags:
       - lots
@@ -350,6 +354,21 @@ paths:
       summary: Сделать ставку
       tags:
       - bids
+  /lots/{id}/status:
+    put:
+      description: Меняет статус лота draft→live→closed->cancelled
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Смена статуса
+      tags:
+      - lots
   /lots/new:
     post:
       description: Создает лоты в базу
