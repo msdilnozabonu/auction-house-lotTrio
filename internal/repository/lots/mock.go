@@ -21,6 +21,11 @@ type MockRepo struct {
 	mock.Mock
 }
 
+func (m *MockRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
+}
+
 func (m *MockRepo) DeleteLots(ctx context.Context, id int64) error {
 	args := m.Called(ctx, id)
 	return args.Error(resultIndex)
