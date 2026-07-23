@@ -69,6 +69,34 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ3MjU4M
 GET http://localhost:9999/api/v1/lots
 Content-Type: application/json
 
+
+
+###
+POST http://localhost:9999/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "login": "bidder2",
+  "password":"bidderbidder",
+  "role": "bidder"
+}
+
+###
+###
+POST http://localhost:9999/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "Rayhona",
+  "password":"adminadmin",
+  "role": "admin"
+}
+
+> {%
+    client.global.set("accessToken", response.body.access_token);
+    client.global.set("refreshToken", response.body.refresh_token);
+%}
+
 ###
 PUT http://localhost:9999/api/v1/lots/15
 Content-Type: application/json
@@ -86,3 +114,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ3MjY4M
 DELETE http://localhost:9999/api/v1/lots/22
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ3Mjg5NDYsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.4cL0nnSTKuXcBzCjZaaXeFl3kB0Xx7pB088O60L8ddM
+
