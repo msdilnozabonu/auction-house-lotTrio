@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/response"
 	"auction-house-lotTrio/internal/service/lots"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -277,22 +278,25 @@ func (h *handler) DeleteLots(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot deleted successfully!"})
 }
 
-func parseID(c *gin.Context) (id, sellerID int64, err error) {
+func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
-	id, err = strconv.ParseInt(idStr, 10, 64)
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		return
+		return 0, 0, errors.New("invalid id")
 	}
 
 	userID, ok := c.Get("user_id")
 	if !ok {
-		return
+		return 0, 0, errors.New("user_id not found")
 	}
-	sellerId, ok := userID.(int64)
+
+	sellerID, ok := userID.(int64)
 	if !ok {
-		return
+		return 0, 0, errors.New("user_id has invalid type")
 	}
-	return id, sellerId, nil
+
+	return id, sellerID, nil
 }
 
 type lotsRequest struct {
