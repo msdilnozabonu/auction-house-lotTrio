@@ -55,6 +55,10 @@ func NewService(userRepo user.Repo, sessionRepo session.Repo) Service {
 }
 
 func (s *service) Register(ctx context.Context, login, password string, role string) error {
+	if role == "" {
+		role = "bidder"
+	}
+
 	if len(login) < minLoginLen {
 		return model.ErrLenLogin
 	}

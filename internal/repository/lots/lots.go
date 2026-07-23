@@ -19,10 +19,10 @@ const (
 	    current_winner_id = (SELECT bidder_id FROM bids WHERE lot_id = $1
 		ORDER BY amount DESC, created_at ASC LIMIT 1)
 	WHERE id = $1 AND status = 'live'`
-	selectByID = `SELECT id, title, description, category, start_price, current_price, 
+	selectByID = `SELECT id, title, description, category, start_price, current_price, COALESCE(current_winner_id, 0), 
        status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1 AND status = 'live'`
-	selectAll = `SELECT id, title, description, category, start_price, current_price, status, starts_at, 
-       ends_at, photo_path FROM lots WHERE status = 'live' 
+	selectAll = `SELECT id, seller_id, title, description, category, start_price, current_price, 
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE status = 'live' 
       	AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
       	AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3)
       	AND ($4 = 0 OR current_price <= $4) ORDER BY id LIMIT $5 OFFSET $6`
@@ -131,8 +131,8 @@ func (r *repo) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lot
 	var out []model.Lots
 	for rows.Next() {
 		var p model.Lots
-		if err = rows.Scan(&p.ID, &p.Title, &p.Description, &p.Category, &p.StartPrice, &p.CurrentPrice,
-			&p.Status, &p.StartAt, &p.EndAt, &p.Photo); err != nil {
+		if err = rows.Scan(&p.ID, &p.SellerID, &p.Title, &p.Description, &p.Category, &p.StartPrice, &p.CurrentPrice,
+			&p.WinnerID, &p.Status, &p.StartAt, &p.EndAt, &p.Photo); err != nil {
 			return nil, 0, fmt.Errorf("get lots: %w", err)
 		}
 		out = append(out, p)
@@ -147,7 +147,7 @@ func (r *repo) GetById(ctx context.Context, id int64) (*model.Lots, error) {
 	var getLot model.Lots
 	err := r.repo.QueryRow(ctx, selectByID, id).
 		Scan(&getLot.ID, &getLot.Title, &getLot.Description, &getLot.Category, &getLot.StartPrice, &getLot.CurrentPrice,
-			&getLot.Status, &getLot.StartAt, &getLot.EndAt, &getLot.Photo, &getLot.SellerID)
+			&getLot.WinnerID, &getLot.Status, &getLot.StartAt, &getLot.EndAt, &getLot.Photo, &getLot.SellerID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, model.ErrNotFound
 	}
