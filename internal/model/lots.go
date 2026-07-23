@@ -7,6 +7,7 @@ type Lots struct {
 	SellerID     int64
 	Title        string
 	Description  string
+	Category     string
 	StartPrice   float64
 	CurrentPrice float64
 	WinnerID     int64

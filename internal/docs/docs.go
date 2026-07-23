@@ -214,22 +214,40 @@ const docTemplate = `{
                 "summary": "Получение список лотов",
                 "parameters": [
                     {
-                        "description": "Добавить лот",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/lots.lotsRequest"
-                        }
+                        "type": "string",
+                        "description": "Поиск",
+                        "name": "search",
+                        "in": "query"
                     },
                     {
-                        "description": "Добавить лот",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/lots.lotsRequest"
-                        }
+                        "type": "string",
+                        "description": "Категория",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Минимальная цена",
+                        "name": "minPrice",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Максимальная цена",
+                        "name": "maxPrice",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество элементов",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -243,8 +261,46 @@ const docTemplate = `{
             }
         },
         "/lots/:id": {
+            "get": {
+                "description": "Returns a lot by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Получение лота по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Лот ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Получает лот по ID и меняет его значение",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -261,6 +317,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/lots.updateLotRequest"
                         }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -276,6 +339,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Получает лот по ID и удаляет его",
                 "produces": [
                     "application/json"
@@ -299,6 +367,11 @@ const docTemplate = `{
         },
         "/lots/new": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Создает лоты в базу",
                 "produces": [
                     "application/json"
@@ -411,6 +484,7 @@ const docTemplate = `{
         "lots.lotsRequest": {
             "type": "object",
             "required": [
+                "category",
                 "description",
                 "endsAt",
                 "photo",
@@ -419,6 +493,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -442,6 +519,7 @@ const docTemplate = `{
         "lots.updateLotRequest": {
             "type": "object",
             "required": [
+                "category",
                 "description",
                 "endsAt",
                 "photo",
@@ -451,6 +529,9 @@ const docTemplate = `{
             "properties": {
                 "ID": {
                     "type": "integer"
+                },
+                "category": {
+                    "type": "string"
                 },
                 "description": {
                     "type": "string"
