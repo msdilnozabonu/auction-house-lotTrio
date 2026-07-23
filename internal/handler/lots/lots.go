@@ -222,7 +222,7 @@ func (h *handler) UpdateByID(c *gin.Context) {
 // UpdateStatusByID  godoc
 //
 //	@Summary	Смена статуса
-//	@Description	Меняет статус лота draft→live→closed
+//	@Description	Меняет статус лота draft→live→closed->cancelled
 //	@Tags			lots
 //	@Produce		json
 //	@Success		200
@@ -280,7 +280,6 @@ func (h *handler) DeleteLots(c *gin.Context) {
 
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
-
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return 0, 0, errors.New("invalid id")
