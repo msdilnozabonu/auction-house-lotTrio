@@ -1,3 +1,4 @@
+// nolint
 package response
 
 import (
@@ -28,6 +29,8 @@ func RespondError(c *gin.Context, err error) {
 	case errors.Is(err, model.ErrIncorrectPassword),
 		errors.Is(err, model.ErrUserNotFound):
 		RespondJSON(c, http.StatusUnauthorized, gin.H{errorKey: "invalid login or password"})
+	case errors.Is(err, model.ErrUnauthorized):
+		RespondJSON(c, http.StatusUnauthorized, gin.H{errorKey: err.Error()})
 	// 403 Forbidden
 	case errors.Is(err, model.ErrForbidden):
 		RespondJSON(c, http.StatusForbidden, gin.H{errorKey: err.Error()})

@@ -29,6 +29,55 @@ definitions:
     - login
     - password
     type: object
+  lots.lotsRequest:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      endsAt:
+        type: string
+      photo:
+        type: string
+      startPrice:
+        type: number
+      status:
+        type: string
+      title:
+        type: string
+    required:
+    - category
+    - description
+    - endsAt
+    - photo
+    - startPrice
+    - status
+    - title
+    type: object
+  lots.updateLotRequest:
+    properties:
+      ID:
+        type: integer
+      category:
+        type: string
+      description:
+        type: string
+      endsAt:
+        type: string
+      photo:
+        type: string
+      startPrice:
+        type: number
+      title:
+        type: string
+    required:
+    - category
+    - description
+    - endsAt
+    - photo
+    - startPrice
+    - title
+    type: object
 host: localhost:9999
 info:
   contact: {}
@@ -134,7 +183,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Создаёт пользователя в базе
+      description: Создаёт пользователя в базу
       parameters:
       - description: Регистрация
         in: body
@@ -154,6 +203,135 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /lots:
+    get:
+      description: Метод возрвщает список активных лотов
+      parameters:
+      - description: Поиск
+        in: query
+        name: search
+        type: string
+      - description: Категория
+        in: query
+        name: category
+        type: string
+      - description: Минимальная цена
+        in: query
+        name: minPrice
+        type: number
+      - description: Максимальная цена
+        in: query
+        name: maxPrice
+        type: number
+      - description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - description: Количество элементов
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+      summary: Получение список лотов
+      tags:
+      - lots
+  /lots/:id:
+    delete:
+      description: Получает лот по ID и удаляет его
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Удаление лот по ID
+      tags:
+      - lots
+    get:
+      description: Returns a lot by its ID
+      parameters:
+      - description: Лот ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+      summary: Получение лота по ID
+      tags:
+      - lots
+    put:
+      consumes:
+      - application/json
+      description: Получает лот по ID и меняет его значение
+      parameters:
+      - description: Изменит лот
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/lots.updateLotRequest'
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Получение лот по ID
+      tags:
+      - lots
+  /lots/new:
+    post:
+      description: Создает лоты в базу
+      parameters:
+      - description: Добавить лот
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/lots.lotsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Создать лоты
+      tags:
+      - lots
   /me:
     get:
       description: Возвращает данные авторизованного пользователя.

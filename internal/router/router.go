@@ -55,7 +55,9 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	{
 		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
 		lotsGroup.GET("", lotHandler.GetAll)
+		lotsGroup.GET("/:id", lotHandler.GetByID)
+		lotsGroup.PUT("/:id", newMiddleware.Auth(), lotHandler.UpdateByID)
+		lotsGroup.DELETE("/:id", newMiddleware.Auth(), lotHandler.DeleteLots)
 	}
 	return engine, nil
 }
-
