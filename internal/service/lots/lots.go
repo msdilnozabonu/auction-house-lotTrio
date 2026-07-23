@@ -133,37 +133,6 @@ func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
 		return model.ErrClosed
 	}
 
-	return items, total, nil
-}
-
-func (s *service) GetByID(ctx context.Context, p model.Lots) (*model.Lots, error) {
-	lot, err := s.lotsRepo.GetById(ctx, p.ID)
-	if err != nil {
-		return nil, fmt.Errorf("get lot by id: %w", err)
-	}
-
-	return lot, nil
-}
-
-func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
-	lot, err := s.lotsRepo.GetById(ctx, p.ID)
-	if err != nil {
-		s.logger.Error("get lot by id", "err", err)
-		return fmt.Errorf("get lot by id: %w", err)
-	}
-
-	if p.SellerID != lot.SellerID {
-		return model.ErrForbidden
-	}
-
-	if p.StartPrice <= 0 {
-		return model.ErrStartPrice
-	}
-
-	if !p.EndAt.After(time.Now()) {
-		return model.ErrClosed
-	}
-
 	err = s.lotsRepo.UpdateLot(ctx, p)
 	if err != nil {
 		s.logger.Error("update lot", "err", err)
