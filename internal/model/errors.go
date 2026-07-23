@@ -17,6 +17,7 @@ var (
 	ErrDatabase          = errors.New("database error")
 	ErrStartPrice        = errors.New("invalid start price")
 	ErrUnauthorized      = errors.New("unauthorized")
+	ErrStatusNotChanged  = errors.New("status not changed")
 
 	// Tokens
 	ErrInvalidToken    = errors.New("invalid or expired token")
