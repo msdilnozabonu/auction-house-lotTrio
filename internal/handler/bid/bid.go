@@ -40,13 +40,13 @@ func NewHandler(bidsService bid.Service) Handler {
 //	@Produce		json
 //	@Param			id		path	int					true	"ID лота"
 //	@Param			input	body	PlaceBidRequest		true	"Сумма ставки"
-//	@Success		201		{object}	map[string]string
+//	@Success		201
 //	@Failure		400
 //	@Failure		401
 //	@Failure		403
 //	@Failure		409
 //	@Security		BearerAuth
-//	@Router			/lots/{id}/bid [post]
+//	@Router			/lots/:id/bid [post]
 func (h *handler) PlaceBid(c *gin.Context) {
 	var req PlaceBidRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

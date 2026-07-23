@@ -29,6 +29,13 @@ definitions:
     - login
     - password
     type: object
+  bid.PlaceBidRequest:
+    properties:
+      amount:
+        type: number
+    required:
+    - amount
+    type: object
   lots.lotsRequest:
     properties:
       category:
@@ -308,6 +315,41 @@ paths:
       summary: Получение лот по ID
       tags:
       - lots
+  /lots/:id/bid:
+    post:
+      consumes:
+      - application/json
+      description: Размещает ставку на активный лот
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Сумма ставки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/bid.PlaceBidRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "409":
+          description: Conflict
+      security:
+      - BearerAuth: []
+      summary: Сделать ставку
+      tags:
+      - bids
   /lots/new:
     post:
       description: Создает лоты в базу
