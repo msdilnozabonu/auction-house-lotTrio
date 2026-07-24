@@ -141,7 +141,7 @@ func TestService_FindLotsForAdmin(t *testing.T) {
 	svc := NewService(m)
 
 	t.Run("successful", func(t *testing.T) {
-		filter := model.LotsFilter{Page: 1, Limit: 10, PageSize: 10}
+		filter := model.LotsFilter{Page: 1, PageSize: 10}
 		expectedLots := []model.Lots{{ID: 1, Title: "Admin Lot"}}
 		m.On("FindLotsAdmin", mock.Anything, filter).Return(expectedLots, 1, nil).Once()
 
@@ -153,7 +153,7 @@ func TestService_FindLotsForAdmin(t *testing.T) {
 
 	t.Run("normalization", func(t *testing.T) {
 		filter := model.LotsFilter{}
-		expectedFilter := model.LotsFilter{Page: 1, Limit: 50, PageSize: 50}
+		expectedFilter := model.LotsFilter{Page: 1, PageSize: 50}
 		m.On("FindLotsAdmin", mock.Anything, expectedFilter).Return([]model.Lots{}, 0, nil).Once()
 
 		_, _, err := svc.FindLotsForAdmin(t.Context(), filter)
@@ -161,7 +161,7 @@ func TestService_FindLotsForAdmin(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
-		filter := model.LotsFilter{Page: 1, Limit: 10, PageSize: 10}
+		filter := model.LotsFilter{Page: 1, PageSize: 10}
 		m.On("FindLotsAdmin", mock.Anything, filter).Return([]model.Lots{}, 0, errors.New("db error")).
 			Once()
 
@@ -170,6 +170,7 @@ func TestService_FindLotsForAdmin(t *testing.T) {
 	})
 
 	m.AssertExpectations(t)
+}
 func TestLotsService_GetAll_Error(t *testing.T) {
 	m := new(lots.MockRepo)
 

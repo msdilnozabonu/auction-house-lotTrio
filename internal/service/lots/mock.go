@@ -16,6 +16,16 @@ type Mock struct{
 	mock.Mock
 }
 
+func (m *Mock) GetByIDForBid(ctx context.Context, p model.Lots) (*model.Lots, error) {
+	args := m.Called(ctx, p)
+		return args.Get(0).(*model.Lots), args.Error(1)
+}
+
+func (m *Mock) UpdateStatus(ctx context.Context, sellerID, id int64, status string) error {
+	args := m.Called(ctx, sellerID, id, status)
+		return args.Error(0)
+}
+
 func (m *Mock) CloseExpiredLot(ctx context.Context) (int, error) {
 	args := m.Called(ctx)
 	return args.Int(0), args.Error(1)

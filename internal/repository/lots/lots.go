@@ -258,6 +258,7 @@ func (r *repo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]mode
 		return nil, 0, fmt.Errorf("find lots: %w", err)
 	}
 	return result, total, nil
+}
   
 func (r *repo) getByID(ctx context.Context, sqlQuery  string, id int64) (*model.Lots, error) {
 	var lot model.Lots

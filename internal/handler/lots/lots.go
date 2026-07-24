@@ -353,7 +353,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 			return
 		}
 		filter.DateField = dateField
-	}else{
+	} else {
 		filter.DateField = "created_at"
 	}
 	if dateFrom := c.Query("date_from"); dateFrom != "" {
@@ -386,6 +386,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		Page:       filter.Page,
 		Limit:      filter.PageSize,
 		TotalPages: totalPages})
+}
   
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
