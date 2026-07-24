@@ -55,13 +55,13 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	lotsGroup := api.Group("/lots")
 	{
 		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
-		lotsGroup.GET("", lotHandler.GetAll)
-		lotsGroup.GET("/:id", lotHandler.GetByID)
+		lotsGroup.GET("", newMiddleware.Auth(), lotHandler.GetAll)
+		lotsGroup.GET("/:id", newMiddleware.Auth(), lotHandler.GetByID)
 		lotsGroup.PUT("/:id", newMiddleware.Auth(), lotHandler.UpdateByID)
 		lotsGroup.PUT("/:id/status", newMiddleware.Auth(), lotHandler.UpdateStatusByID)
 		lotsGroup.DELETE("/:id", newMiddleware.Auth(), lotHandler.DeleteLots)
 
-		lotsGroup.POST("/:id/bid", newMiddleware.Auth(), bidHandler.PlaceBid)
+		lotsGroup.POST("/:id/bid", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.PlaceBid)
 	}
 	return engine, nil
 }

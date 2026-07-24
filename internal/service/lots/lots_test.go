@@ -136,6 +136,20 @@ func TestLotsService_GetAll(t *testing.T) {
 	require.Equal(t, 2, total)
 }
 
+func TestLotsService_GetAll_Error(t *testing.T) {
+	m := new(lots.MockRepo)
+
+	m.On("GetAll", mock.Anything, mock.Anything).
+		Return([]model.Lots(nil), 0, errors.New("db error"))
+
+	svc := NewService(m)
+	items, total, err := svc.GetAll(t.Context(), model.LotsFilter{})
+	require.Nil(t, items)
+	require.Zero(t, total)
+	require.ErrorContains(t, err, "get all lots")
+	m.AssertExpectations(t)
+}
+
 func TestService_GetByID(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		m := new(lots.MockRepo)
@@ -166,6 +180,41 @@ func TestService_GetByID(t *testing.T) {
 
 		require.Nil(t, got)
 		require.ErrorContains(t, err, "get lot by id")
+		m.AssertExpectations(t)
+	})
+}
+
+func TestService_GetByIDForBid(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		expected := &model.Lots{ID: 1, Status: "live"}
+
+		m.On("GetByIdForBid", mock.Anything, int64(1)).
+			Return(expected, nil)
+
+		svc := NewService(m)
+
+		got, err := svc.GetByIDForBid(t.Context(), model.Lots{ID: 1})
+
+		require.NoError(t, err)
+		require.Equal(t, expected, got)
+
+		m.AssertExpectations(t)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("GetByIdForBid", mock.Anything, int64(2)).
+			Return((*model.Lots)(nil), errors.New("not found"))
+
+		svc := NewService(m)
+
+		got, err := svc.GetByIDForBid(t.Context(), model.Lots{ID: 2})
+
+		require.Nil(t, got)
+		require.ErrorContains(t, err, "get lot by id")
+
 		m.AssertExpectations(t)
 	})
 }

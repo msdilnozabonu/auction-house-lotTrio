@@ -21,6 +21,9 @@ const (
 	WHERE id = $1 AND status = 'live'`
 	selectByID = `SELECT id, title, description, category, start_price, current_price, COALESCE(current_winner_id, 0), 
        status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1`
+	selectByIDForBid = `SELECT id, title, description, category, start_price, current_price, 
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1 
+       AND status = 'live'`
 	selectAll = `SELECT id, seller_id, title, description, category, start_price, current_price, 
        COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE status = 'live' 
       	AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
@@ -38,6 +41,7 @@ type Repo interface {
 		endsAt time.Time, status string, sellerID int64, currentPrice float64) error
 	GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 	GetById(ctx context.Context, id int64) (*model.Lots, error)
+	GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error)
 	UpdateLot(ctx context.Context, l model.Lots) error
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	DeleteLots(ctx context.Context, id int64) error
@@ -145,18 +149,11 @@ func (r *repo) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lot
 }
 
 func (r *repo) GetById(ctx context.Context, id int64) (*model.Lots, error) {
-	var getLot model.Lots
-	err := r.repo.QueryRow(ctx, selectByID, id).
-		Scan(&getLot.ID, &getLot.Title, &getLot.Description, &getLot.Category, &getLot.StartPrice, &getLot.CurrentPrice,
-			&getLot.WinnerID, &getLot.Status, &getLot.StartAt, &getLot.EndAt, &getLot.Photo, &getLot.SellerID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, model.ErrNotFound
-	}
-	if err != nil {
-		slog.Error("get lots by id", "err", err)
-		return nil, fmt.Errorf("get lots: %w", err)
-	}
-	return &getLot, nil
+	return r.getByID(ctx, selectByID, id)
+}
+
+func (r *repo) GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error) {
+	return r.getByID(ctx, selectByIDForBid, id)
 }
 
 func (r *repo) UpdateLot(ctx context.Context, l model.Lots) error {
@@ -190,4 +187,21 @@ func (r *repo) DeleteLots(ctx context.Context, id int64) error {
 		return fmt.Errorf("delete lots: %w", err)
 	}
 	return nil
+}
+
+func (r *repo) getByID(ctx context.Context, sqlQuery  string, id int64) (*model.Lots, error) {
+	var lot model.Lots
+	err := r.repo.QueryRow(ctx, sqlQuery , id).Scan(&lot.ID, &lot.Title, &lot.Description, &lot.Category,
+		&lot.StartPrice, &lot.CurrentPrice, &lot.WinnerID, &lot.Status, &lot.StartAt, &lot.EndAt,
+		&lot.Photo, &lot.SellerID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, model.ErrNotFound
+	}
+	if err != nil {
+		slog.Error("get lot by id", "err", err)
+		return nil, fmt.Errorf("get lot: %w", err)
+	}
+
+	return &lot, nil
 }
