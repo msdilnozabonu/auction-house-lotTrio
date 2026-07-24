@@ -1,3 +1,4 @@
+// nolint:wrapcheck
 package lots
 
 import (
@@ -8,6 +9,9 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const (
+	errorIndex = 2
+)
 type Mock struct{
 	mock.Mock
 }
@@ -29,7 +33,7 @@ func (m *Mock) CreateLot(ctx context.Context, title, description, category strin
 
 func (m *Mock) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error) {
 	args := m.Called(ctx, filter)
-	return args.Get(0).([]model.Lots), args.Int(1), args.Error(2)
+	return args.Get(0).([]model.Lots), args.Int(1), args.Error(errorIndex)
 }
 
 func (m *Mock) GetByID(ctx context.Context, p model.Lots) (*model.Lots, error) {
@@ -49,7 +53,7 @@ func (m *Mock) DeleteLots(ctx context.Context, p model.Lots) error {
 
 func (m *Mock) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error) {
 	args := m.Called(ctx, filter)
-		return args.Get(0).([]model.Lots), args.Int(1), args.Error(2)
+		return args.Get(0).([]model.Lots), args.Int(1), args.Error(errorIndex)
 }
 
 var _ Service = (*Mock)(nil)

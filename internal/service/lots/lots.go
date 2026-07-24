@@ -169,5 +169,10 @@ func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter)
 	if filter.PageSize <1 || filter.PageSize >100{
 		filter.PageSize = 50
 	}
-	return s.lotsRepo.FindLotsAdmin(ctx, filter)
+	items, total, err := s.lotsRepo.FindLotsAdmin(ctx, filter)
+	if err != nil {
+		s.logger.Error("find lots for admin", "err", err)
+		return nil, 0, fmt.Errorf("find lots for admin: %w", err)
+	}
+	return items, total, nil
 }

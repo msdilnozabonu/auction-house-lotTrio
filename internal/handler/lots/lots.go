@@ -56,6 +56,7 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 
 const (
 	messageKey    = "message"
+	errorMsg = "error"
 	pageSizeLimit = 20
 )
 
@@ -304,7 +305,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		sellerIdInt, err := strconv.ParseInt(sellerId, 10, 64)
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
-			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid seller id"})
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid seller id"})
 			return
 		}
 		filter.SellerID = sellerIdInt
@@ -313,7 +314,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		pageInt, err := strconv.Atoi(page)
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
-			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid page number"})
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid page number"})
 			return
 		}
 		filter.Page = pageInt
@@ -322,7 +323,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		pageSizeInt, err := strconv.Atoi(pageSize)
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
-			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid page size"})
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid page size"})
 			return
 		}
 		filter.PageSize = pageSizeInt
@@ -330,7 +331,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 	if dateField := c.Query("date_field"); dateField != "" {
 		if dateField != "created_at" && dateField != "ends_at" {
 			h.logger.Error("date field must be created_at and ends_at", "date_field", dateField)
-			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid date field"})
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date field"})
 			return
 		}
 		filter.DateField = dateField
@@ -341,7 +342,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		dateFromP, err := time.Parse(time.DateOnly, dateFrom)
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
-			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid date from"})
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date from"})
 			return
 		}
 		filter.DateFrom = &dateFromP
@@ -350,14 +351,14 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		dateToP, err := time.Parse(time.DateOnly, dateTo)
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
-			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid date to"})
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date to"})
 		}
 		filter.DateTo = &dateToP
 	}
 	items, total, err := h.lotsService.FindLotsForAdmin(c.Request.Context(), filter)
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
 		return
 	}
 	totalPages := (total + filter.PageSize - 1) / filter.PageSize
