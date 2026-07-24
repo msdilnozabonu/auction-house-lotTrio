@@ -12,6 +12,7 @@ type LotsFilter struct {
 	Status   string
 	SellerID int64
 	PageSize int
+	DateField string
 	DateFrom *time.Time
 	DateTo   *time.Time
 }

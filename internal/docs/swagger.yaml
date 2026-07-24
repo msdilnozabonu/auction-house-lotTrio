@@ -54,6 +54,21 @@ definitions:
     - status
     - title
     type: object
+  lots.pagResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.Lots'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
   lots.updateLotRequest:
     properties:
       ID:
@@ -77,6 +92,40 @@ definitions:
     - photo
     - startPrice
     - title
+    type: object
+  model.Lots:
+    properties:
+      category:
+        type: string
+      createdAt:
+        type: string
+      currentPrice:
+        format: float64
+        type: number
+      description:
+        type: string
+      endAt:
+        type: string
+      id:
+        format: int64
+        type: integer
+      photo:
+        type: string
+      sellerID:
+        format: int64
+        type: integer
+      startAt:
+        type: string
+      startPrice:
+        format: float64
+        type: number
+      status:
+        type: string
+      title:
+        type: string
+      winnerID:
+        format: int64
+        type: integer
     type: object
 host: localhost:9999
 info:
@@ -103,6 +152,74 @@ paths:
       security:
       - BearerAuth: []
       summary: Закрыть просроченные лоты
+      tags:
+      - admin
+  /admin/lots:
+    get:
+      description: Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск,
+        пагинация. Доступна только админу
+      parameters:
+      - description: Поиск по названию лота
+        in: query
+        name: search
+        type: string
+      - description: Фильтр по статусу (draft, live, closed, cancelled)
+        in: query
+        name: status
+        type: string
+      - description: Фильтр по ID продавца
+        in: query
+        name: seller_id
+        type: integer
+      - description: Номер страницы (по умолчанию 1)
+        in: query
+        name: page
+        type: integer
+      - description: Размер страницы (по умолчанию 50, максимум 100)
+        in: query
+        name: page_size
+        type: integer
+      - description: 'Поле для фильтрации по дате: created_at или ends_at(default
+          created_at)'
+        in: query
+        name: date_field
+        type: string
+      - description: Начало периода (формат YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Конец периода (формат YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lots.pagResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получает лот по title, status, seller_id, date
       tags:
       - admin
   /auth/login:
