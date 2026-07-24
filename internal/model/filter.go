@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type LotsFilter struct {
 	Search   string
 	Category string
@@ -7,4 +9,9 @@ type LotsFilter struct {
 	MaxPrice float64
 	Page     int
 	Limit    int
+	Status   string
+	SellerID int64
+	DateField string
+	DateFrom *time.Time
+	DateTo   *time.Time
 }

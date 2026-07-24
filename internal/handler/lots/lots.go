@@ -21,6 +21,7 @@ type Handler interface {
 	UpdateByID(c *gin.Context)
 	UpdateStatusByID(c *gin.Context)
 	DeleteLots(c *gin.Context)
+	GetLotsForAdmin(c *gin.Context)
 }
 
 type handler struct {
@@ -55,7 +56,11 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 	response.RespondJSON(c, http.StatusOK, gin.H{"closed": count})
 }
 
-const messageKey = "message"
+const (
+	messageKey    = "message"
+	errorMsg = "error"
+	pageSizeLimit = 20
+)
 
 // CreateLot     godoc
 //
@@ -286,6 +291,103 @@ func (h *handler) DeleteLots(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot deleted successfully!"})
 }
 
+// GetLotsForAdmin godoc
+//
+// @Summary 	Получает лот по title, status, seller_id, date
+// @Description Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. Доступна только админу
+// @Tags		admin
+// @Produce		 json
+// @Success      200 {object} pagResponse
+// @Security	 BearerAuth
+// @Param        search     query    string  false  "Поиск по названию лота"
+// @Param        status     query    string  false  "Фильтр по статусу (draft, live, closed, cancelled)"
+// @Param        seller_id  query    int     false  "Фильтр по ID продавца"
+// @Param        page       query    int     false  "Номер страницы (по умолчанию 1)"
+// @Param        page_size  query    int     false  "Размер страницы (по умолчанию 50, максимум 100)"
+// @Param        date_field query string false "Поле для фильтрации по дате: created_at или ends_at(default created_at)"
+// @Param        date_from   query  string  false  "Начало периода (формат YYYY-MM-DD)"
+// @Param        date_to     query  string  false  "Конец периода (формат YYYY-MM-DD)"
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router			/admin/lots [get]
+//nolint:funlen
+func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
+	filter := model.LotsFilter{
+		Search:   c.Query("search"),
+		Status:   c.Query("status"),
+		Page:     1,
+		Limit: pageSizeLimit,
+	}
+	if sellerId := c.Query("seller_id"); sellerId != "" {
+		sellerIdInt, err := strconv.ParseInt(sellerId, 10, 64)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid seller id"})
+			return
+		}
+		filter.SellerID = sellerIdInt
+	}
+	if page := c.Query("page"); page != "" {
+		pageInt, err := strconv.Atoi(page)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid page number"})
+			return
+		}
+		filter.Page = pageInt
+	}
+	if limit := c.Query("page_size"); limit != "" {
+		limitInt, err := strconv.Atoi(limit)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid page size"})
+			return
+		}
+		filter.Limit = limitInt
+	}
+	if dateField := c.Query("date_field"); dateField != "" {
+		if dateField != "created_at" && dateField != "ends_at" {
+			h.logger.Error("date field must be created_at and ends_at", "date_field", dateField)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date field"})
+			return
+		}
+		filter.DateField = dateField
+	} else {
+		filter.DateField = "created_at"
+	}
+	if dateFrom := c.Query("date_from"); dateFrom != "" {
+		dateFromP, err := time.Parse(time.DateOnly, dateFrom)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date from"})
+			return
+		}
+		filter.DateFrom = &dateFromP
+	}
+	if dateTo := c.Query("date_to"); dateTo != "" {
+		dateToP, err := time.Parse(time.DateOnly, dateTo)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date to"})
+		}
+		filter.DateTo = &dateToP
+	}
+	items, total, err := h.lotsService.FindLotsForAdmin(c.Request.Context(), filter)
+	if err != nil {
+		h.logger.Error("get lots repository", "err", err)
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+		return
+	}
+	totalPages := (total + filter.Limit - 1) / filter.Limit
+	response.RespondJSON(c, http.StatusOK, pagResponse{
+		Items:      items,
+		Total:      total,
+		Page:       filter.Page,
+		Limit:      filter.Limit,
+		TotalPages: totalPages})
+}
+  
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)

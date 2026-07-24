@@ -50,6 +50,7 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	adminGroup.Use(newMiddleware.Auth(), middleware.RequireRole("admin"))
 	{
 		adminGroup.POST("/close-expired", lotHandler.CloseExpiredLot)
+		adminGroup.GET("/lots", lotHandler.GetLotsForAdmin)
 	}
 
 	lotsGroup := api.Group("/lots")

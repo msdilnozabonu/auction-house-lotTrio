@@ -47,6 +47,6 @@ func RespondError(c *gin.Context, err error) {
 		RespondJSON(c, http.StatusInternalServerError, gin.H{errorKey: err.Error()})
 	}
 }
-func RespondJSON(c *gin.Context, status int, body gin.H) {
+func RespondJSON(c *gin.Context, status int, body any) {
 	c.JSON(status, body)
 }

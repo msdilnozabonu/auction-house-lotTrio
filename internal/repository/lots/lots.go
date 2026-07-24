@@ -32,6 +32,9 @@ const (
 	countAll = `SELECT COUNT(*) FROM lots WHERE status = 'live' 
         AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
         AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3) AND ($4 = 0 OR current_price <= $4)`
+	baseQuery = `SELECT id, seller_id, title, description, start_price, current_price, current_winner_id, status, 
+       starts_at, ends_at, photo_path FROM lots WHERE 1=1`
+	baseCountQuery = `SELECT COUNT(*) FROM lots WHERE 1=1`
 )
 
 type Repo interface {
@@ -45,6 +48,7 @@ type Repo interface {
 	UpdateLot(ctx context.Context, l model.Lots) error
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	DeleteLots(ctx context.Context, id int64) error
+	FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error)
 }
 
 type repo struct {
@@ -189,9 +193,76 @@ func (r *repo) DeleteLots(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *repo) getByID(ctx context.Context, sqlQuery  string, id int64) (*model.Lots, error) {
+//nolint:funlen
+func (r *repo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error) { //nolint:cyclop
+	baseQ := baseQuery
+	baseCountQ := baseCountQuery
+	var args []any
+	argN := 1
+	if lots.Status != "" {
+		baseQ += fmt.Sprintf(" AND status = $%d", argN)
+		baseCountQ += fmt.Sprintf(" AND status = $%d", argN)
+		args = append(args, lots.Status)
+		argN++
+	}
+	if lots.SellerID != 0 {
+		baseQ += fmt.Sprintf(" AND seller_id = $%d", argN)
+		baseCountQ += fmt.Sprintf(" AND seller_id = $%d", argN)
+		args = append(args, lots.SellerID)
+		argN++
+	}
+	if lots.Search != "" {
+		baseQ += fmt.Sprintf(" AND (title ILIKE $%d)", argN)
+		baseCountQ += fmt.Sprintf(" AND (title ILIKE $%d)", argN)
+		args = append(args, "%"+lots.Search+"%")
+		argN++
+	}
+	if lots.DateFrom != nil {
+		baseQ += fmt.Sprintf(" AND starts_at >= $%d", argN)
+		baseCountQ += fmt.Sprintf(" AND starts_at >= $%d", argN)
+		args = append(args, *lots.DateFrom)
+		argN++
+	}
+	if lots.DateTo != nil {
+		baseQ += fmt.Sprintf(" AND ends_at <= $%d", argN)
+		baseCountQ += fmt.Sprintf(" AND ends_at <= $%d", argN)
+		args = append(args, *lots.DateTo)
+		argN++
+	}
+
+	var total int
+	err := r.repo.QueryRow(ctx, baseCountQ, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count lots: %w", err)
+	}
+
+	baseQ += fmt.Sprintf(" ORDER BY id ASC LIMIT $%d OFFSET $%d", argN, argN+1)
+	args = append(args, lots.Limit, (lots.Page-1)*lots.Limit)
+
+	rows, err := r.repo.Query(ctx, baseQ, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("find lots: %w", err)
+	}
+	defer rows.Close()
+
+	var result []model.Lots
+	for rows.Next() {
+		var l model.Lots
+		if err = rows.Scan(&l.ID, &l.SellerID, &l.Title, &l.Description, &l.StartPrice, &l.CurrentPrice,
+			&l.WinnerID, &l.Status, &l.StartAt, &l.EndAt, &l.Photo); err != nil {
+			return nil, 0, fmt.Errorf("find lots: %w", err)
+		}
+		result = append(result, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("find lots: %w", err)
+	}
+	return result, total, nil
+}
+
+func (r *repo) getByID(ctx context.Context, sqlQuery string, id int64) (*model.Lots, error) {
 	var lot model.Lots
-	err := r.repo.QueryRow(ctx, sqlQuery , id).Scan(&lot.ID, &lot.Title, &lot.Description, &lot.Category,
+	err := r.repo.QueryRow(ctx, sqlQuery, id).Scan(&lot.ID, &lot.Title, &lot.Description, &lot.Category,
 		&lot.StartPrice, &lot.CurrentPrice, &lot.WinnerID, &lot.Status, &lot.StartAt, &lot.EndAt,
 		&lot.Photo, &lot.SellerID,
 	)

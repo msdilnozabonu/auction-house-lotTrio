@@ -20,6 +20,7 @@ type Service interface {
 	UpdateById(ctx context.Context, p model.Lots) error
 	UpdateStatus(ctx context.Context, sellerID, id int64, status string) error
 	DeleteLots(ctx context.Context, p model.Lots) error
+	FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
 type service struct {
@@ -201,4 +202,19 @@ func (s *service) DeleteLots(ctx context.Context, p model.Lots) error {
 	}
 
 	return nil
+}
+
+func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error) {
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.Limit <1 || filter.Limit >100{
+		filter.Limit = 50
+	}
+	items, total, err := s.lotsRepo.FindLotsAdmin(ctx, filter)
+	if err != nil {
+		s.logger.Error("find lots for admin", "err", err)
+		return nil, 0, fmt.Errorf("find lots for admin: %w", err)
+	}
+	return items, total, nil
 }

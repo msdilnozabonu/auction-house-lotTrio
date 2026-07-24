@@ -45,6 +45,10 @@ Content-Type: application/json
     client.global.set("refreshToken", response.body.refresh_token);
 %}
 
+###
+GET http://localhost:9999/api/v1/admin/lots
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 ###
 POST http://localhost:9999/api/v1/admin/close-expired
@@ -96,6 +100,21 @@ Content-Type: application/json
     client.global.set("accessToken", response.body.access_token);
     client.global.set("refreshToken", response.body.refresh_token);
 %}
+
+###
+POST http://localhost:9999/api/v1/lots/new
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Iphone",
+  "description": "good phone",
+  "startPrice": 12000,
+  "category": "electronics",
+  "photo": "https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg",
+  "endsAt": "2026-12-31T23:59:59Z",
+  "status": "live"
+}
 
 ###
 PUT http://localhost:9999/api/v1/lots/15
