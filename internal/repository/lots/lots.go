@@ -19,10 +19,13 @@ const (
 	    current_winner_id = (SELECT bidder_id FROM bids WHERE lot_id = $1
 		ORDER BY amount DESC, created_at ASC LIMIT 1)
 	WHERE id = $1 AND status = 'live'`
-	selectByID = `SELECT id, title, description, category, start_price, current_price, 
-       status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1 AND status = 'live'`
-	selectAll = `SELECT id, title, description, category, start_price, current_price, status, starts_at, 
-       ends_at, photo_path FROM lots WHERE status = 'live' 
+	selectByID = `SELECT id, title, description, category, start_price, current_price, COALESCE(current_winner_id, 0), 
+       status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1`
+	selectByIDForBid = `SELECT id, title, description, category, start_price, current_price, 
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1 
+       AND status = 'live'`
+	selectAll = `SELECT id, seller_id, title, description, category, start_price, current_price, 
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE status = 'live' 
       	AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
       	AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3)
       	AND ($4 = 0 OR current_price <= $4) ORDER BY id LIMIT $5 OFFSET $6`
@@ -41,7 +44,9 @@ type Repo interface {
 		endsAt time.Time, status string, sellerID int64, currentPrice float64) error
 	GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 	GetById(ctx context.Context, id int64) (*model.Lots, error)
+	GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error)
 	UpdateLot(ctx context.Context, l model.Lots) error
+	UpdateStatus(ctx context.Context, id int64, status string) error
 	DeleteLots(ctx context.Context, id int64) error
 	FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error)
 }
@@ -135,8 +140,8 @@ func (r *repo) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lot
 	var out []model.Lots
 	for rows.Next() {
 		var p model.Lots
-		if err = rows.Scan(&p.ID, &p.Title, &p.Description, &p.Category, &p.StartPrice, &p.CurrentPrice,
-			&p.Status, &p.StartAt, &p.EndAt, &p.Photo); err != nil {
+		if err = rows.Scan(&p.ID, &p.SellerID, &p.Title, &p.Description, &p.Category, &p.StartPrice, &p.CurrentPrice,
+			&p.WinnerID, &p.Status, &p.StartAt, &p.EndAt, &p.Photo); err != nil {
 			return nil, 0, fmt.Errorf("get lots: %w", err)
 		}
 		out = append(out, p)
@@ -148,18 +153,11 @@ func (r *repo) GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lot
 }
 
 func (r *repo) GetById(ctx context.Context, id int64) (*model.Lots, error) {
-	var getLot model.Lots
-	err := r.repo.QueryRow(ctx, selectByID, id).
-		Scan(&getLot.ID, &getLot.Title, &getLot.Description, &getLot.Category, &getLot.StartPrice, &getLot.CurrentPrice,
-			&getLot.Status, &getLot.StartAt, &getLot.EndAt, &getLot.Photo, &getLot.SellerID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, model.ErrNotFound
-	}
-	if err != nil {
-		slog.Error("get lots by id", "err", err)
-		return nil, fmt.Errorf("get lots: %w", err)
-	}
-	return &getLot, nil
+	return r.getByID(ctx, selectByID, id)
+}
+
+func (r *repo) GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error) {
+	return r.getByID(ctx, selectByIDForBid, id)
 }
 
 func (r *repo) UpdateLot(ctx context.Context, l model.Lots) error {
@@ -169,6 +167,16 @@ func (r *repo) UpdateLot(ctx context.Context, l model.Lots) error {
 		l.Title, l.Description, l.Category, l.StartPrice, l.Photo, l.EndAt, l.ID).
 		Scan(&l.ID, &l.SellerID, &l.Title, &l.Description, &l.Category, &l.StartPrice,
 			&l.CurrentPrice, &l.Status, &l.Photo, &l.EndAt)
+	if err != nil {
+		slog.Error("update lots by id", "err", err)
+		return fmt.Errorf("update lots: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) UpdateStatus(ctx context.Context, id int64, status string) error {
+	err := r.repo.QueryRow(ctx, `UPDATE lots SET status = $1 where id = $2 returning status, id`, status, id).
+		Scan(&status, &id)
 	if err != nil {
 		slog.Error("update lots by id", "err", err)
 		return fmt.Errorf("update lots: %w", err)
@@ -250,4 +258,20 @@ func (r *repo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]mode
 		return nil, 0, fmt.Errorf("find lots: %w", err)
 	}
 	return result, total, nil
+  
+func (r *repo) getByID(ctx context.Context, sqlQuery  string, id int64) (*model.Lots, error) {
+	var lot model.Lots
+	err := r.repo.QueryRow(ctx, sqlQuery , id).Scan(&lot.ID, &lot.Title, &lot.Description, &lot.Category,
+		&lot.StartPrice, &lot.CurrentPrice, &lot.WinnerID, &lot.Status, &lot.StartAt, &lot.EndAt,
+		&lot.Photo, &lot.SellerID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, model.ErrNotFound
+	}
+	if err != nil {
+		slog.Error("get lot by id", "err", err)
+		return nil, fmt.Errorf("get lot: %w", err)
+	}
+
+	return &lot, nil
 }

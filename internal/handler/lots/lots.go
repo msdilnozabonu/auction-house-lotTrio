@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/response"
 	"auction-house-lotTrio/internal/service/lots"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -18,6 +19,7 @@ type Handler interface {
 	GetAll(c *gin.Context)
 	GetByID(c *gin.Context)
 	UpdateByID(c *gin.Context)
+	UpdateStatusByID(c *gin.Context)
 	DeleteLots(c *gin.Context)
 	GetLotsForAdmin(c *gin.Context)
 }
@@ -111,6 +113,7 @@ func (h *handler) CreateLot(c *gin.Context) {
 //	@Param			limit		query	int		false	"Количество элементов"
 //	@Success		200
 //	@Failure		400
+//	@Security		BearerAuth
 //	@Router			/lots [get]
 func (h *handler) GetAll(c *gin.Context) {
 	minPrice, _ := strconv.ParseFloat(c.Query("minPrice"), 64)
@@ -155,6 +158,7 @@ func (h *handler) GetAll(c *gin.Context) {
 //	@Success		200
 //	@Failure		400
 //	@Failure		404
+//	@Security		BearerAuth
 //	@Router			/lots/:id [get]
 func (h *handler) GetByID(c *gin.Context) {
 	id := c.Param("id")
@@ -165,7 +169,13 @@ func (h *handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	lot, err := h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	role := c.GetString("role")
+	var lot *model.Lots
+	if role == "bidder" {
+		lot, err = h.lotsService.GetByIDForBid(c.Request.Context(), model.Lots{ID: lotID})
+	} else {
+		lot, err = h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	}
 	if err != nil {
 		h.logger.Error("get lot by id", "err", err)
 		response.RespondError(c, err)
@@ -196,26 +206,14 @@ func (h *handler) UpdateByID(c *gin.Context) {
 		return
 	}
 
-	id := c.Param("id")
-	IDint, err := strconv.ParseInt(id, 10, 64)
+	id, sellerId, err := parseID(c)
 	if err != nil {
 		response.RespondError(c, err)
 		return
 	}
 
-	userID, ok := c.Get("user_id")
-	if !ok {
-		response.RespondError(c, model.ErrUnauthorized)
-		return
-	}
-	sellerId, ok := userID.(int64)
-	if !ok {
-		response.RespondError(c, model.ErrForbidden)
-		return
-	}
-
 	err = h.lotsService.UpdateById(c.Request.Context(), model.Lots{
-		ID:          IDint,
+		ID:          id,
 		SellerID:    sellerId,
 		Title:       req.Title,
 		Description: req.Description,
@@ -233,6 +231,38 @@ func (h *handler) UpdateByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot updated successfully!"})
 }
 
+// UpdateStatusByID  godoc
+//
+//	@Summary	Смена статуса
+//	@Description	Меняет статус лота draft→live→closed->cancelled
+//	@Tags			lots
+//	@Produce		json
+//	@Success		200
+//	@Failure		401
+//	@Security		BearerAuth
+//	@Router			/lots/{id}/status [put]
+func (h *handler) UpdateStatusByID(c *gin.Context) {
+	id, sellerId, err := parseID(c)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	var req updateStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	err = h.lotsService.UpdateStatus(c.Request.Context(), sellerId, id, req.Status)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{messageKey: "Status updated successfully!"})
+}
+
 // DeleteLots  godoc
 //
 //	@Summary		Удаление лот по ID
@@ -245,25 +275,13 @@ func (h *handler) UpdateByID(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Router			/lots/:id [delete]
 func (h *handler) DeleteLots(c *gin.Context) {
-	id := c.Param("id")
-	IDint, err := strconv.ParseInt(id, 10, 64)
+	id, sellerId, err := parseID(c)
 	if err != nil {
 		response.RespondError(c, err)
 		return
 	}
 
-	userID, ok := c.Get("user_id")
-	if !ok {
-		response.RespondError(c, model.ErrUnauthorized)
-		return
-	}
-	sellerId, ok := userID.(int64)
-	if !ok {
-		response.RespondError(c, model.ErrForbidden)
-		return
-	}
-
-	err = h.lotsService.DeleteLots(c.Request.Context(), model.Lots{ID: IDint, SellerID: sellerId})
+	err = h.lotsService.DeleteLots(c.Request.Context(), model.Lots{ID: id, SellerID: sellerId})
 	if err != nil {
 		h.logger.Error("delete lots repository", "err", err)
 		response.RespondError(c, err)
@@ -367,6 +385,25 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		Page:       filter.Page,
 		Limit:      filter.PageSize,
 		TotalPages: totalPages})
+  
+func parseID(c *gin.Context) (int64, int64, error) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("invalid id")
+	}
+
+	userID, ok := c.Get("user_id")
+	if !ok {
+		return 0, 0, errors.New("user_id not found")
+	}
+
+	sellerID, ok := userID.(int64)
+	if !ok {
+		return 0, 0, errors.New("user_id has invalid type")
+	}
+
+	return id, sellerID, nil
 }
 
 type lotsRequest struct {
@@ -395,4 +432,8 @@ type pagResponse struct {
 	Limit      int          `json:"limit"`
 	Total      int          `json:"total"`
 	TotalPages int          `json:"totalPages"`
+}
+
+type updateStatusRequest struct {
+	Status string `json:"status"`
 }

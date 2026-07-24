@@ -16,7 +16,9 @@ type Service interface {
 		photo string, endsAt time.Time, status string, sellerID int64) error
 	GetAll(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 	GetByID(ctx context.Context, p model.Lots) (*model.Lots, error)
+	GetByIDForBid(ctx context.Context, p model.Lots) (*model.Lots, error)
 	UpdateById(ctx context.Context, p model.Lots) error
+	UpdateStatus(ctx context.Context, sellerID, id int64, status string) error
 	DeleteLots(ctx context.Context, p model.Lots) error
 	FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 }
@@ -114,6 +116,15 @@ func (s *service) GetByID(ctx context.Context, p model.Lots) (*model.Lots, error
 	return lot, nil
 }
 
+func (s *service) GetByIDForBid(ctx context.Context, p model.Lots) (*model.Lots, error) {
+	lot, err := s.lotsRepo.GetByIdForBid(ctx, p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get lot by id: %w", err)
+	}
+
+	return lot, nil
+}
+
 func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
 	lot, err := s.lotsRepo.GetById(ctx, p.ID)
 	if err != nil {
@@ -134,6 +145,37 @@ func (s *service) UpdateById(ctx context.Context, p model.Lots) error {
 	}
 
 	err = s.lotsRepo.UpdateLot(ctx, p)
+	if err != nil {
+		s.logger.Error("update lot", "err", err)
+		return fmt.Errorf("update lot: %w", err)
+	}
+
+	return nil
+}
+
+func (s *service) UpdateStatus(ctx context.Context, sellerID, id int64, status string) error {
+	lot, err := s.lotsRepo.GetById(ctx, id)
+	if err != nil {
+		s.logger.Error("get lot by id", "err", err)
+		return fmt.Errorf("get lot by id: %w", err)
+	}
+
+	if sellerID != lot.SellerID {
+		return model.ErrForbidden
+	}
+
+	changStatus := map[string]string{
+		"draft":  "live",
+		"live":   "closed",
+		"closed": "cancelled",
+	}
+
+	next, ok := changStatus[lot.Status]
+	if !ok || next != status {
+		return model.ErrStatusNotChanged
+	}
+
+	err = s.lotsRepo.UpdateStatus(ctx, id, status)
 	if err != nil {
 		s.logger.Error("update lot", "err", err)
 		return fmt.Errorf("update lot: %w", err)

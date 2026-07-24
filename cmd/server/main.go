@@ -2,14 +2,17 @@ package main
 
 import (
 	"auction-house-lotTrio/internal/handler/auth"
+	bidhandler "auction-house-lotTrio/internal/handler/bid"
 	lots2 "auction-house-lotTrio/internal/handler/lots"
 	userhandler "auction-house-lotTrio/internal/handler/user"
 	"auction-house-lotTrio/internal/middleware"
+	bidrepo "auction-house-lotTrio/internal/repository/bid"
 	"auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
+	bidservice "auction-house-lotTrio/internal/service/bid"
 	lots3 "auction-house-lotTrio/internal/service/lots"
 	userservice "auction-house-lotTrio/internal/service/user"
 	"context"
@@ -160,7 +163,16 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	lotsService := lots3.NewService(lotsRepo)
 	lotsHandler := lots2.NewHandler(lotsService)
 	lotsService.StartScheduler(schedulerCtx, scheduler)
-	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler)
+
+	bidRepo, err := bidrepo.New(pool)
+	if err != nil {
+		slog.Error("create bid repository: %w", "err", err)
+		os.Exit(1)
+	}
+	bidService := bidservice.NewService(bidRepo)
+	bidHandler := bidhandler.NewHandler(bidService)
+
+	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler, bidHandler)
 
 	if err != nil {
 		return nil, fmt.Errorf("create router: %w", err)
