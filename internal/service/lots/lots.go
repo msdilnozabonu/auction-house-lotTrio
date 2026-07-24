@@ -18,6 +18,7 @@ type Service interface {
 	GetByID(ctx context.Context, p model.Lots) (*model.Lots, error)
 	UpdateById(ctx context.Context, p model.Lots) error
 	DeleteLots(ctx context.Context, p model.Lots) error
+	FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
 type service struct {
@@ -159,4 +160,17 @@ func (s *service) DeleteLots(ctx context.Context, p model.Lots) error {
 	}
 
 	return nil
+}
+
+func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error) {
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.Limit < 1 {
+		filter.Limit = 50
+	}
+	if filter.PageSize <1 || filter.PageSize >100{
+		filter.PageSize = 50
+	}
+	return s.lotsRepo.FindLotsAdmin(ctx, filter)
 }

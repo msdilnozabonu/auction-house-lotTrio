@@ -135,3 +135,39 @@ func TestLotsService_GetAll(t *testing.T) {
 	require.Len(t, items, 2)
 	require.Equal(t, 2, total)
 }
+
+func TestService_FindLotsForAdmin(t *testing.T) {
+	m := new(lots.MockRepo)
+	svc := NewService(m)
+
+	t.Run("successful", func(t *testing.T) {
+		filter := model.LotsFilter{Page: 1, Limit: 10, PageSize: 10}
+		expectedLots := []model.Lots{{ID: 1, Title: "Admin Lot"}}
+		m.On("FindLotsAdmin", mock.Anything, filter).Return(expectedLots, 1, nil).Once()
+
+		items, total, err := svc.FindLotsForAdmin(t.Context(), filter)
+		require.NoError(t, err)
+		require.Equal(t, expectedLots, items)
+		require.Equal(t, 1, total)
+	})
+
+	t.Run("normalization", func(t *testing.T) {
+		filter := model.LotsFilter{}
+		expectedFilter := model.LotsFilter{Page: 1, Limit: 50, PageSize: 50}
+		m.On("FindLotsAdmin", mock.Anything, expectedFilter).Return([]model.Lots{}, 0, nil).Once()
+
+		_, _, err := svc.FindLotsForAdmin(t.Context(), filter)
+		require.NoError(t, err)
+	})
+
+	t.Run("fail", func(t *testing.T) {
+		filter := model.LotsFilter{Page: 1, Limit: 10, PageSize: 10}
+		m.On("FindLotsAdmin", mock.Anything, filter).Return([]model.Lots{}, 0, errors.New("db error")).
+			Once()
+
+		_, _, err := svc.FindLotsForAdmin(t.Context(), filter)
+		require.Error(t, err)
+	})
+
+	m.AssertExpectations(t)
+}

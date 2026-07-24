@@ -21,6 +21,11 @@ type MockRepo struct {
 	mock.Mock
 }
 
+func (m *MockRepo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error) {
+	args := m.Called(ctx, lots)
+	return args.Get(resultIndex).([]model.Lots), args.Int(totalIndex), args.Error(getAllErrIndex)
+}
+
 func (m *MockRepo) DeleteLots(ctx context.Context, id int64) error {
 	args := m.Called(ctx, id)
 	return args.Error(resultIndex)

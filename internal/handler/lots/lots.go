@@ -19,6 +19,7 @@ type Handler interface {
 	GetByID(c *gin.Context)
 	UpdateByID(c *gin.Context)
 	DeleteLots(c *gin.Context)
+	GetLotsForAdmin(c *gin.Context)
 }
 
 type handler struct {
@@ -53,7 +54,11 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 	response.RespondJSON(c, http.StatusOK, gin.H{"closed": count})
 }
 
-const messageKey = "message"
+const (
+	messageKey = "message"
+	pageSizeLimit = 20
+	limit = 20
+)
 
 // CreateLot     godoc
 //
@@ -266,6 +271,60 @@ func (h *handler) DeleteLots(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot deleted successfully!"})
+}
+
+func (h *handler) GetLotsForAdmin(c *gin.Context) {
+	filter := model.LotsFilter{
+		Search:   c.Query("search"),
+		Status:   c.Query("status"),
+		Page:     1,
+		PageSize: pageSizeLimit,
+		Limit:    limit,
+	}
+	if sellerId := c.Query("seller_id"); sellerId != "" {
+		sellerIdInt, err := strconv.ParseInt(sellerId, 10, 64)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid seller id"})
+			return
+		}
+		filter.SellerID = sellerIdInt
+	}
+	if page := c.Query("page"); page != "" {
+		pageInt, err := strconv.Atoi(page)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid page number"})
+			return
+		}
+		filter.Page = pageInt
+	}
+	if pageSize := c.Query("page_size"); pageSize != "" {
+		pageSizeInt, err := strconv.Atoi(pageSize)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid page size"})
+			return
+		}
+		filter.PageSize = pageSizeInt
+	}
+	if limit := c.Query("limit"); limit != "" {
+		limitInt, err := strconv.Atoi(limit)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{"error": "invalid limit"})
+			return
+		}
+		filter.Limit = limitInt
+	}
+	items, total, err := h.lotsService.FindLotsForAdmin(c.Request.Context(), filter)
+	if err != nil {
+		h.logger.Error("get lots repository", "err", err)
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+	h.logger.Info("get lots repository", "items", items, "total", total)
+	response.RespondJSON(c, http.StatusOK, gin.H{"items": items, "total": total})
 }
 
 type lotsRequest struct {
