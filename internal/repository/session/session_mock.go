@@ -1,8 +1,7 @@
 //nolint:wrapcheck
-package auth
+package session
 
 import (
-	"auction-house-lotTrio/internal/repository/session"
 	"context"
 	"time"
 
@@ -26,9 +25,9 @@ func (m *SessionMock) CreateSession(
 func (m *SessionMock) GetSessionByTokenHash(
 	ctx context.Context,
 	tokenHash string,
-) (session.Session, error) {
+) (Session, error) {
 	args := m.Called(ctx, tokenHash)
-	return args.Get(0).(session.Session), args.Error(1)
+	return args.Get(0).(Session), args.Error(1)
 }
 
 func (m *SessionMock) RotateSessionToken(
@@ -57,4 +56,4 @@ func (m *SessionMock) GetUserRole(
 	return args.String(0), args.Error(1)
 }
 
-var _ session.Repo = (*SessionMock)(nil)
+var _ Repo = (*SessionMock)(nil)

@@ -24,6 +24,10 @@ type MockRepo struct {
 func (m *MockRepo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error) {
 	args := m.Called(ctx, lots)
 	return args.Get(resultIndex).([]model.Lots), args.Int(totalIndex), args.Error(getAllErrIndex)
+  
+func (m *MockRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
 }
 
 func (m *MockRepo) DeleteLots(ctx context.Context, id int64) error {
@@ -34,6 +38,13 @@ func (m *MockRepo) DeleteLots(ctx context.Context, id int64) error {
 func (m *MockRepo) GetById(ctx context.Context, id int64) (*model.Lots, error) {
 	args := m.Called(ctx, id)
 	return args.Get(resultIndex).(*model.Lots), args.Error(errorIndex)
+}
+
+func (m *MockRepo) GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error) {
+	args := m.Called(ctx, id)
+
+	lot, _ := args.Get(resultIndex).(*model.Lots)
+	return lot, args.Error(errorIndex)
 }
 
 func (m *MockRepo) UpdateLot(ctx context.Context, l model.Lots) error {

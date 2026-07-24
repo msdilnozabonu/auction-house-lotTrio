@@ -19,7 +19,8 @@ func RespondError(c *gin.Context, err error) {
 	// 400 Bad Request
 	case errors.Is(err, model.ErrInvalid),
 		errors.Is(err, model.ErrLenLogin),
-		errors.Is(err, model.ErrLenPass):
+		errors.Is(err, model.ErrLenPass),
+		errors.Is(err, model.ErrStatusNotChanged):
 		RespondJSON(c, http.StatusBadRequest, gin.H{errorKey: err.Error()})
 	// 401 Unauthorized
 	case errors.Is(err, model.ErrInvalidToken),

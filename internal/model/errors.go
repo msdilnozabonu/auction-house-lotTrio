@@ -6,7 +6,7 @@ var (
 	ErrNotFound          = errors.New("record not found")
 	ErrInvalid           = errors.New("invalid input")
 	ErrForbidden         = errors.New("forbidden")
-	ErrOutbid            = errors.New("the bid is lower than the current bid")
+	ErrOutbid            = errors.New("the bid is lower than the current bid or the lot is closed")
 	ErrClosed            = errors.New("lot closed")
 	ErrLenLogin          = errors.New("login length must be between 3 and 255")
 	ErrLenPass           = errors.New("password must be at least 8 characters")
@@ -17,6 +17,7 @@ var (
 	ErrDatabase          = errors.New("database error")
 	ErrStartPrice        = errors.New("invalid start price")
 	ErrUnauthorized      = errors.New("unauthorized")
+	ErrStatusNotChanged  = errors.New("status not changed")
 
 	// Tokens
 	ErrInvalidToken    = errors.New("invalid or expired token")
