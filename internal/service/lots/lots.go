@@ -208,8 +208,8 @@ func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter)
 	if filter.Page < 1 {
 		filter.Page = 1
 	}
-	if filter.PageSize <1 || filter.PageSize >100{
-		filter.PageSize = 50
+	if filter.Limit <1 || filter.Limit >100{
+		filter.Limit = 50
 	}
 	items, total, err := s.lotsRepo.FindLotsAdmin(ctx, filter)
 	if err != nil {

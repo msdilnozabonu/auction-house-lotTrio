@@ -317,7 +317,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		Search:   c.Query("search"),
 		Status:   c.Query("status"),
 		Page:     1,
-		PageSize: pageSizeLimit,
+		Limit: pageSizeLimit,
 	}
 	if sellerId := c.Query("seller_id"); sellerId != "" {
 		sellerIdInt, err := strconv.ParseInt(sellerId, 10, 64)
@@ -337,14 +337,14 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		}
 		filter.Page = pageInt
 	}
-	if pageSize := c.Query("page_size"); pageSize != "" {
-		pageSizeInt, err := strconv.Atoi(pageSize)
+	if limit := c.Query("page_size"); limit != "" {
+		limitInt, err := strconv.Atoi(limit)
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
 			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid page size"})
 			return
 		}
-		filter.PageSize = pageSizeInt
+		filter.Limit = limitInt
 	}
 	if dateField := c.Query("date_field"); dateField != "" {
 		if dateField != "created_at" && dateField != "ends_at" {
@@ -379,12 +379,12 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
 		return
 	}
-	totalPages := (total + filter.PageSize - 1) / filter.PageSize
+	totalPages := (total + filter.Limit - 1) / filter.Limit
 	response.RespondJSON(c, http.StatusOK, pagResponse{
 		Items:      items,
 		Total:      total,
 		Page:       filter.Page,
-		Limit:      filter.PageSize,
+		Limit:      filter.Limit,
 		TotalPages: totalPages})
 }
   

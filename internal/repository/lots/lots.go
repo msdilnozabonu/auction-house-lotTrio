@@ -237,7 +237,7 @@ func (r *repo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]mode
 	}
 
 	baseQ += fmt.Sprintf(" ORDER BY id ASC LIMIT $%d OFFSET $%d", argN, argN+1)
-	args = append(args, lots.PageSize, (lots.Page-1)*lots.PageSize)
+	args = append(args, lots.Limit, (lots.Page-1)*lots.Limit)
 
 	rows, err := r.repo.Query(ctx, baseQ, args...)
 	if err != nil {
@@ -259,10 +259,10 @@ func (r *repo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]mode
 	}
 	return result, total, nil
 }
-  
-func (r *repo) getByID(ctx context.Context, sqlQuery  string, id int64) (*model.Lots, error) {
+
+func (r *repo) getByID(ctx context.Context, sqlQuery string, id int64) (*model.Lots, error) {
 	var lot model.Lots
-	err := r.repo.QueryRow(ctx, sqlQuery , id).Scan(&lot.ID, &lot.Title, &lot.Description, &lot.Category,
+	err := r.repo.QueryRow(ctx, sqlQuery, id).Scan(&lot.ID, &lot.Title, &lot.Description, &lot.Category,
 		&lot.StartPrice, &lot.CurrentPrice, &lot.WinnerID, &lot.Status, &lot.StartAt, &lot.EndAt,
 		&lot.Photo, &lot.SellerID,
 	)
