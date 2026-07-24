@@ -13,6 +13,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: auction_house
+        ports:
+          - 5445:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d auction_house"
+          --health-interval 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,15 +44,32 @@ jobs:
           go build ./...
           go vet ./...
 
-      - name: Tests + Coverage
+      - name: Install migrate
         run: |
-          go test $(go list ./... | grep -v '/cmd/') \
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.19.0/migrate.linux-amd64.tar.gz \
+          | tar -xz
+          sudo mv migrate /usr/local/bin/
+
+      - name: Run migrations
+        run: |
+          migrate \
+            -path migrations/server \
+            -database "postgres://app:pass@localhost:5445/auction_house?sslmode=disable" \
+            up
+
+      - name: Tests + Coverage
+        env:
+          TEST_DB_DSN: postgres://app:pass@localhost:5445/auction_house?sslmode=disable
+        run: |
+          go test -tags=integration $(go list ./... | grep -vE '/cmd/|/internal/docs') \
             -coverprofile=coverage.out \
             -covermode=atomic
 
       - name: Race detector
+        env:
+          TEST_DB_DSN: postgres://app:pass@localhost:5445/auction_house?sslmode=disable
         run: |
-          go test -race $(go list ./... | grep -v '/cmd/')
+          go test -race -tags=integration $(go list ./... | grep -vE '/cmd/|/internal/docs')
 
       - name: Coverage summary
         run: |
