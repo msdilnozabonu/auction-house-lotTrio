@@ -18,6 +18,9 @@ var (
 	ErrStartPrice        = errors.New("invalid start price")
 	ErrUnauthorized      = errors.New("unauthorized")
 	ErrStatusNotChanged  = errors.New("status not changed")
+	ErrFileTooLarge      = errors.New("file too large")
+	ErrPhotoNotFound     = errors.New("photo not found")
+	ErrInvalidFileType   = errors.New("invalid file type")
 
 	// Tokens
 	ErrInvalidToken    = errors.New("invalid or expired token")

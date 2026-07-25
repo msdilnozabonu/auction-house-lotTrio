@@ -21,6 +21,8 @@ type Service interface {
 	UpdateStatus(ctx context.Context, sellerID, id int64, status string) error
 	DeleteLots(ctx context.Context, p model.Lots) error
 	FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
+	UploadPhotoById(ctx context.Context, sellerID, id int64, filename string, size int64, contentType string) error
+	GetPhoto(ctx context.Context, id, sellerID int64) (string, error)
 }
 
 type service struct {
@@ -208,7 +210,7 @@ func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter)
 	if filter.Page < 1 {
 		filter.Page = 1
 	}
-	if filter.Limit <1 || filter.Limit >100{
+	if filter.Limit < 1 || filter.Limit > 100 {
 		filter.Limit = 50
 	}
 	items, total, err := s.lotsRepo.FindLotsAdmin(ctx, filter)
@@ -217,4 +219,53 @@ func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter)
 		return nil, 0, fmt.Errorf("find lots for admin: %w", err)
 	}
 	return items, total, nil
+}
+func (s *service) UploadPhotoById(ctx context.Context, sellerID, id int64, filename string,
+	size int64, contentType string) error {
+	lot, err := s.lotsRepo.GetById(ctx, id)
+	if err != nil {
+		s.logger.Error("get lot by id", "err", err)
+		return fmt.Errorf("get lot by id: %w", err)
+	}
+
+	if sellerID != lot.SellerID {
+		return model.ErrForbidden
+	}
+
+	const maxBite = 5 * 1024 * 1024
+	if size > maxBite {
+		s.logger.Error("upload photo", "size", size)
+		return model.ErrFileTooLarge
+	}
+
+	if contentType != "image/jpeg" && contentType != "image/png" {
+		return model.ErrInvalidFileType
+	}
+
+	err = s.lotsRepo.UploadPhoto(ctx, id, filename)
+	if err != nil {
+		s.logger.Error("upload photo", "err", err)
+		return fmt.Errorf("upload photo: %w", err)
+	}
+	return nil
+}
+
+func (s *service) GetPhoto(ctx context.Context, id, sellerID int64) (string, error) {
+	lot, err := s.lotsRepo.GetById(ctx, id)
+	if err != nil {
+		s.logger.Error("get lot by id", "err", err)
+		return "", fmt.Errorf("get lot by id: %w", err)
+	}
+
+	if sellerID != lot.SellerID {
+		return "", model.ErrForbidden
+	}
+
+	photo, err := s.lotsRepo.GetPhoto(ctx, id)
+	if err != nil {
+		s.logger.Error("get photo", "err", err)
+		return "", model.ErrPhotoNotFound
+	}
+
+	return photo, nil
 }

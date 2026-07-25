@@ -53,6 +53,8 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		adminGroup.GET("/lots", lotHandler.GetLotsForAdmin)
 	}
 
+	engine.Static("/uploads", "./uploads")
+	
 	lotsGroup := api.Group("/lots")
 	{
 		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
@@ -61,6 +63,8 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		lotsGroup.PUT("/:id", newMiddleware.Auth(), lotHandler.UpdateByID)
 		lotsGroup.PUT("/:id/status", newMiddleware.Auth(), lotHandler.UpdateStatusByID)
 		lotsGroup.DELETE("/:id", newMiddleware.Auth(), lotHandler.DeleteLots)
+		lotsGroup.POST("/:id/photo", newMiddleware.Auth(), lotHandler.UploadPhoto)
+		lotsGroup.GET("/:id/photo", newMiddleware.Auth(), lotHandler.GetPhoto)
 
 		lotsGroup.POST("/:id/bid", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.PlaceBid)
 	}

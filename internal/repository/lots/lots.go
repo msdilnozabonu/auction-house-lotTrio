@@ -49,6 +49,8 @@ type Repo interface {
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	DeleteLots(ctx context.Context, id int64) error
 	FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error)
+	UploadPhoto(ctx context.Context, id int64, photo string) error
+	GetPhoto(ctx context.Context, id int64) (string, error)
 }
 
 type repo struct {
@@ -275,4 +277,24 @@ func (r *repo) getByID(ctx context.Context, sqlQuery string, id int64) (*model.L
 	}
 
 	return &lot, nil
+}
+
+func (r *repo) UploadPhoto(ctx context.Context, id int64, photo string) error {
+	_, err := r.repo.Exec(ctx, `UPDATE lots SET photo_path = $1 WHERE id = $2`, photo, id)
+	if err != nil {
+		slog.Error("upload photo by id", "err", err)
+		return fmt.Errorf("upload photo by id: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) GetPhoto(ctx context.Context, id int64) (string, error) {
+	var photo string
+	err := r.repo.QueryRow(ctx, `SELECT photo_path FROM lots WHERE id = $1`, id).
+		Scan(&photo)
+	if err != nil {
+		slog.Error("get photo by id", "err", err)
+		return "", fmt.Errorf("get photo by id: %w", err)
+	}
+	return photo, nil
 }
