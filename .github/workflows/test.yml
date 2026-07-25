@@ -62,8 +62,9 @@ jobs:
           TEST_DB_DSN: postgres://app:pass@localhost:5445/auction_house?sslmode=disable
         run: |
           go test -tags=integration $(go list ./... | grep -vE '/cmd/|/internal/docs') \
-            -coverprofile=coverage.out \
+            -coverprofile=coverage.out.mocks \
             -covermode=atomic
+          grep -vE "mock\.go|_mock\.go" coverage.out.mocks > coverage.out
 
       - name: Race detector
         env:
