@@ -91,6 +91,21 @@ func TestService_StartScheduler_Success(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
+func TestService_StartScheduler_Error(t *testing.T) {
+	m := new(lots.MockRepo)
+	m.On("FindExpiredLot", mock.Anything, mock.AnythingOfType("time.Time")).
+		Return([]int64{1}, nil)
+	m.On("CloseLot", mock.Anything, int64(1)).
+		Return(false, errors.New("database error"))
+	s := NewService(m)
+	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	s.StartScheduler(sigCtx, 10*time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	m.AssertExpectations(t)
+}
+
 func TestLotsService_CreateLot(t *testing.T) {
 	m := new(lots.MockRepo)
 	t.Run("success", func(t *testing.T) {
