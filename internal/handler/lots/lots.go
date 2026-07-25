@@ -370,6 +370,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		if err != nil {
 			h.logger.Error("get lots repository", "err", err)
 			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date to"})
+			return
 		}
 		filter.DateTo = &dateToP
 	}
