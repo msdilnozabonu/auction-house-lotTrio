@@ -18,10 +18,13 @@ const (
 
 	insertBid = `INSERT INTO bids (lot_id, bidder_id, amount)
         VALUES ($1, $2, $3)`
+	getBidderBids = `SELECT b.lot_id, l.title, b.amount, b.created_at FROM bids b
+		JOIN lots l ON l.id = b.lot_id WHERE b.bidder_id = $1 ORDER BY b.created_at DESC`
 )
 
 type Repo interface {
 	PlaceBid(ctx context.Context, lotID, bidderID int64, amount float64) error
+	GetBidderBids(ctx context.Context, bidderID int64) ([]model.Bid, error)
 }
 
 type repo struct {
@@ -62,4 +65,28 @@ func (r *repo) PlaceBid(ctx context.Context, lotID, bidderID int64, amount float
 	}
 
 	return nil
+}
+
+func (r *repo) GetBidderBids(ctx context.Context, bidderID int64) ([]model.Bid, error) {
+	rows, err := r.repo.Query(ctx, getBidderBids, bidderID)
+	if err != nil {
+		return nil, fmt.Errorf("get bidder bids: %w", err)
+	}
+	defer rows.Close()
+
+	bids := make([]model.Bid, 0)
+	for rows.Next() {
+		var bid model.Bid
+		if err := rows.Scan(&bid.LotID, &bid.LotTitle, &bid.Amount, &bid.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan bid: %w", err)
+		}
+
+		bids = append(bids, bid)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate bids: %w", err)
+	}
+
+	return bids, nil
 }

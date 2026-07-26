@@ -68,5 +68,8 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 
 		lotsGroup.POST("/:id/bid", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.PlaceBid)
 	}
+
+	api.GET("/bids", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.GetBiddersBids)
+
 	return engine, nil
 }
