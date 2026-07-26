@@ -17,6 +17,11 @@ type Mock struct {
 	mock.Mock
 }
 
+func (m *Mock) ModerateALot(ctx context.Context, id int64, approve bool, reason string) error {
+	args := m.Called(ctx, id, approve, reason)
+		return args.Error(0)
+}
+
 func (m *Mock) UploadPhotoById(ctx context.Context, sellerID, id int64, filename string,
 	size int64, contentType string) error {
 	args := m.Called(ctx, sellerID, id, filename, size, contentType)

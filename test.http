@@ -158,3 +158,12 @@ Content-Type: image/jpeg
 GET http://localhost:9999/api/v1/lots/11/photo
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUwMDk0MjcsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.SwvXWGvKkiEAm_hva7BGH2aBunVTb6sseSIXFIsR8SA
+
+###
+PUT http://localhost:9999/api/v1/admin/lots/2/moderate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "approve": true
+}

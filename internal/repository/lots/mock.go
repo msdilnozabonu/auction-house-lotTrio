@@ -21,6 +21,11 @@ type MockRepo struct {
 	mock.Mock
 }
 
+func (m *MockRepo) ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error) {
+	args := m.Called(ctx, id, status, reason)
+		return args.Bool(resultIndex), args.Error(errorIndex)
+}
+
 func (m *MockRepo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error) {
 	args := m.Called(ctx, lots)
 	return args.Get(resultIndex).([]model.Lots), args.Int(totalIndex), args.Error(getAllErrIndex)

@@ -61,6 +61,13 @@ definitions:
     - status
     - title
     type: object
+  lots.moderateRequest:
+    properties:
+      approve:
+        type: boolean
+      reason:
+        type: string
+    type: object
   lots.pagResponse:
     properties:
       items:
@@ -227,6 +234,40 @@ paths:
       security:
       - BearerAuth: []
       summary: Получает лот по title, status, seller_id, date
+      tags:
+      - admin
+  /admin/lots/{id}/moderate:
+    put:
+      consumes:
+      - application/json
+      description: Одобрить или отклонить лот перед публикацией. При отклонении требуется
+        причина.
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Решение модерации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/lots.moderateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Модерация лота
       tags:
       - admin
   /auth/login:
@@ -471,6 +512,35 @@ paths:
       summary: Сделать ставку
       tags:
       - bids
+  /lots/:id/photo:
+    get:
+      description: По ID получает фото из БД
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Получение фото лота
+      tags:
+      - lots
+    put:
+      description: Проверяет размер фото и обновляет путь фото в БД
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Обновление фото
+      tags:
+      - lots
   /lots/{id}/status:
     put:
       description: Меняет статус лота draft→live→closed->cancelled

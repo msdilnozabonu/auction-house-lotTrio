@@ -13,6 +13,8 @@ type Lots struct {
 	WinnerID     int64
 	Status       string
 	Photo        string
+	ModerationStatus string
+	RejectionReason  string
 	StartAt      time.Time
 	EndAt        time.Time
 	CreatedAt    time.Time
