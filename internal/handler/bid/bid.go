@@ -17,6 +17,7 @@ const (
 
 type Handler interface {
 	PlaceBid(c *gin.Context)
+	GetBiddersBids(c *gin.Context)
 }
 
 type handler struct {
@@ -79,9 +80,32 @@ func (h *handler) PlaceBid(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	response.RespondJSON(c, http.StatusCreated, gin.H{
 		messageKey: "bid placed successfully!",
 	})
+}
+
+func (h *handler) GetBiddersBids(c *gin.Context) {
+	userID, ok := c.Get("user_id")
+	if !ok {
+		response.RespondError(c, model.ErrUnauthorized)
+		return
+	}
+
+	bidderID, ok := userID.(int64)
+	if !ok {
+		response.RespondError(c, model.ErrForbidden)
+		return
+	}
+
+	bids, err := h.bidsService.GetBidderBids(c.Request.Context(), bidderID)
+	if err != nil {
+		h.logger.Error("get my bids", "err", err)
+		response.RespondError(c, err)
+		return
+	}
+
+	response.RespondJSON(c, http.StatusOK, bids)
 }
 
 type PlaceBidRequest struct {
