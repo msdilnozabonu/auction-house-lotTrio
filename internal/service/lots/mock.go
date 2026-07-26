@@ -12,18 +12,30 @@ import (
 const (
 	errorIndex = 2
 )
-type Mock struct{
+
+type Mock struct {
 	mock.Mock
+}
+
+func (m *Mock) UploadPhotoById(ctx context.Context, sellerID, id int64, filename string,
+	size int64, contentType string) error {
+	args := m.Called(ctx, sellerID, id, filename, size, contentType)
+	return args.Error(0)
+}
+
+func (m *Mock) GetPhoto(ctx context.Context, id, sellerID int64) (string, error) {
+	args := m.Called(ctx, id, sellerID)
+	return args.String(0), args.Error(1)
 }
 
 func (m *Mock) GetByIDForBid(ctx context.Context, p model.Lots) (*model.Lots, error) {
 	args := m.Called(ctx, p)
-		return args.Get(0).(*model.Lots), args.Error(1)
+	return args.Get(0).(*model.Lots), args.Error(1)
 }
 
 func (m *Mock) UpdateStatus(ctx context.Context, sellerID, id int64, status string) error {
 	args := m.Called(ctx, sellerID, id, status)
-		return args.Error(0)
+	return args.Error(0)
 }
 
 func (m *Mock) CloseExpiredLot(ctx context.Context) (int, error) {
@@ -63,7 +75,7 @@ func (m *Mock) DeleteLots(ctx context.Context, p model.Lots) error {
 
 func (m *Mock) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error) {
 	args := m.Called(ctx, filter)
-		return args.Get(0).([]model.Lots), args.Int(1), args.Error(errorIndex)
+	return args.Get(0).([]model.Lots), args.Int(1), args.Error(errorIndex)
 }
 
 var _ Service = (*Mock)(nil)

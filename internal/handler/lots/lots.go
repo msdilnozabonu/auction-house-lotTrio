@@ -7,10 +7,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler interface {
@@ -22,6 +24,8 @@ type Handler interface {
 	UpdateStatusByID(c *gin.Context)
 	DeleteLots(c *gin.Context)
 	GetLotsForAdmin(c *gin.Context)
+	UploadPhoto(c *gin.Context)
+	GetPhoto(c *gin.Context)
 }
 
 type handler struct {
@@ -58,7 +62,7 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 
 const (
 	messageKey    = "message"
-	errorMsg = "error"
+	errorMsg      = "error"
 	pageSizeLimit = 20
 )
 
@@ -311,13 +315,14 @@ func (h *handler) DeleteLots(c *gin.Context) {
 // @Failure      401 {object} map[string]string
 // @Failure      500 {object} map[string]string
 // @Router			/admin/lots [get]
+//
 //nolint:funlen
 func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 	filter := model.LotsFilter{
-		Search:   c.Query("search"),
-		Status:   c.Query("status"),
-		Page:     1,
-		Limit: pageSizeLimit,
+		Search: c.Query("search"),
+		Status: c.Query("status"),
+		Page:   1,
+		Limit:  pageSizeLimit,
 	}
 	if sellerId := c.Query("seller_id"); sellerId != "" {
 		sellerIdInt, err := strconv.ParseInt(sellerId, 10, 64)
@@ -388,7 +393,95 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 		Limit:      filter.Limit,
 		TotalPages: totalPages})
 }
-  
+
+const bufByte = 512
+
+// UploadPhoto  godoc
+//
+//	@Summary		Обновление фото
+//	@Description Проверяет размер фото и обновляет путь фото в БД
+//	@Tags			lots
+//	@Produce		json
+//	@Success		200
+//	@Failure		401
+//	@Security		BearerAuth
+//	@Router			/lots/:id/photo [put]
+func (h *handler) UploadPhoto(c *gin.Context) {
+	id, sellerId, err := parseID(c)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	file, err := c.FormFile("photo")
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	filePath := filepath.Ext(file.Filename)
+	fileName := uuid.New().String() + filePath
+	dstPath := "uploads/images/" + fileName
+
+	err = c.SaveUploadedFile(file, dstPath)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	photoURL := "/uploads/images/" + fileName
+
+	src, err := file.Open()
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	defer src.Close() //nolint:errcheck
+	buf := make([]byte, bufByte)
+	read, err := src.Read(buf)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	contentType := http.DetectContentType(buf[:read])
+
+	err = h.lotsService.UploadPhotoById(c.Request.Context(), sellerId, id, photoURL, file.Size, contentType)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"file": fileName,
+		"size": file.Size,
+	})
+}
+
+// GetPhoto  godoc
+//
+//	@Summary		Получение фото лота
+//	@Description    По ID получает фото из БД
+//	@Tags			lots
+//	@Produce		json
+//	@Success		200
+//	@Failure		401
+//	@Security		BearerAuth
+//	@Router			/lots/:id/photo [get]
+func (h *handler) GetPhoto(c *gin.Context) {
+	id, sellerId, err := parseID(c)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	photo, err := h.lotsService.GetPhoto(c.Request.Context(), id, sellerId)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"photo_path": photo})
+}
+
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
