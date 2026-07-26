@@ -2,6 +2,7 @@
 package bid
 
 import (
+	"auction-house-lotTrio/internal/model"
 	"context"
 
 	"github.com/stretchr/testify/mock"
@@ -14,4 +15,10 @@ type MockRepo struct {
 func (m *MockRepo) PlaceBid(ctx context.Context, lotID, bidderID int64, amount float64) error {
 	args := m.Called(ctx, lotID, bidderID, amount)
 	return args.Error(0)
+}
+
+func (m *MockRepo) GetBidderBids(ctx context.Context, bidderID int64) ([]model.Bid, error) {
+	args := m.Called(ctx, bidderID)
+	bids, _ := args.Get(0).([]model.Bid)
+	return bids, args.Error(1)
 }

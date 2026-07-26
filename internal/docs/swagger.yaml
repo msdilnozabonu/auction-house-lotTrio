@@ -107,6 +107,17 @@ definitions:
     - startPrice
     - title
     type: object
+  model.Bid:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      lot_id:
+        type: integer
+      lot_title:
+        type: string
+    type: object
   model.Lots:
     properties:
       category:
@@ -368,6 +379,29 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /bids:
+    get:
+      description: Возвращает все ставки авторизованного участника
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Bid'
+            type: array
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Получить свои ставки
+      tags:
+      - bids
   /lots:
     get:
       description: Метод возрвщает список активных лотов

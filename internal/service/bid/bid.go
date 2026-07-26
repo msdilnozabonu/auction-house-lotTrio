@@ -1,6 +1,7 @@
 package bid
 
 import (
+	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/repository/bid"
 	"context"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 
 type Service interface {
 	PlaceBid(ctx context.Context, lotID, bidderID int64, amount float64) error
+	GetBidderBids(ctx context.Context, bidderID int64) ([]model.Bid, error)
 }
 
 type service struct {
@@ -28,4 +30,13 @@ func (s *service) PlaceBid(ctx context.Context, lotID, bidderID int64, amount fl
 		return fmt.Errorf("place bid: %w", err)
 	}
 	return nil
+}
+
+func (s *service) GetBidderBids(ctx context.Context, bidderID int64) ([]model.Bid, error) {
+	bids, err := s.bidsRepo.GetBidderBids(ctx, bidderID)
+	if err != nil {
+		return nil, fmt.Errorf("get my bids: %w", err)
+	}
+
+	return bids, nil
 }
