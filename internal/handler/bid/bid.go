@@ -85,6 +85,18 @@ func (h *handler) PlaceBid(c *gin.Context) {
 	})
 }
 
+// GetBiddersBids godoc
+//
+//	@Summary		Получить свои ставки
+//	@Description	Возвращает все ставки авторизованного участника
+//	@Tags			bids
+//	@Produce		json
+//	@Success		200		{array}		model.Bid
+//	@Failure		401
+//	@Failure		403
+//	@Failure		500
+//	@Security		BearerAuth
+//	@Router			/bids [get]
 func (h *handler) GetBiddersBids(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {

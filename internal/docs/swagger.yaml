@@ -100,6 +100,17 @@ definitions:
     - startPrice
     - title
     type: object
+  model.Bid:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      lot_id:
+        type: integer
+      lot_title:
+        type: string
+    type: object
   model.Lots:
     properties:
       category:
@@ -327,6 +338,29 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /bids:
+    get:
+      description: Возвращает все ставки авторизованного участника
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Bid'
+            type: array
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Получить свои ставки
+      tags:
+      - bids
   /lots:
     get:
       description: Метод возрвщает список активных лотов
@@ -471,6 +505,35 @@ paths:
       summary: Сделать ставку
       tags:
       - bids
+  /lots/:id/photo:
+    get:
+      description: По ID получает фото из БД
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Получение фото лота
+      tags:
+      - lots
+    put:
+      description: Проверяет размер фото и обновляет путь фото в БД
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Обновление фото
+      tags:
+      - lots
   /lots/{id}/status:
     put:
       description: Меняет статус лота draft→live→closed->cancelled
