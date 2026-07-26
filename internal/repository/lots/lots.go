@@ -48,7 +48,7 @@ type Repo interface {
 	GetById(ctx context.Context, id int64) (*model.Lots, error)
 	GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error)
 	UpdateLot(ctx context.Context, l model.Lots) error
-	UpdateStatus(ctx context.Context, id int64, status string) error
+	UpdateStatus(ctx context.Context, id int64, status string) (bool, error)
 	DeleteLots(ctx context.Context, id int64) error
 	FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error)
 	UploadPhoto(ctx context.Context, id int64, photo string) error
@@ -179,14 +179,18 @@ func (r *repo) UpdateLot(ctx context.Context, l model.Lots) error {
 	return nil
 }
 
-func (r *repo) UpdateStatus(ctx context.Context, id int64, status string) error {
-	err := r.repo.QueryRow(ctx, `UPDATE lots SET status = $1 where id = $2 returning status, id`, status, id).
-		Scan(&status, &id)
+func (r *repo) UpdateStatus(ctx context.Context, id int64, status string) (bool, error) {
+	var returnedID int64
+	err := r.repo.QueryRow(ctx, `UPDATE lots
+    SET status = $1
+    WHERE id = $2 AND ($1 != 'live' OR moderation_status = 'approved')
+    RETURNING id`, status, id).
+		Scan(&returnedID)
 	if err != nil {
 		slog.Error("update lots by id", "err", err)
-		return fmt.Errorf("update lots: %w", err)
+		return false, fmt.Errorf("update lots: %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 func (r *repo) DeleteLots(ctx context.Context, id int64) error {

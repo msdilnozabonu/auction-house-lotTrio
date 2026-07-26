@@ -41,9 +41,9 @@ func (m *MockRepo) UploadPhoto(ctx context.Context, id int64, photo string) erro
 	return args.Error(0)
 }
 
-func (m *MockRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
+func (m *MockRepo) UpdateStatus(ctx context.Context, id int64, status string) (bool, error) {
 	args := m.Called(ctx, id, status)
-	return args.Error(0)
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *MockRepo) DeleteLots(ctx context.Context, id int64) error {

@@ -178,10 +178,13 @@ func (s *service) UpdateStatus(ctx context.Context, sellerID, id int64, status s
 		return model.ErrStatusNotChanged
 	}
 
-	err = s.lotsRepo.UpdateStatus(ctx, id, status)
+	ok, err = s.lotsRepo.UpdateStatus(ctx, id, status)
 	if err != nil {
 		s.logger.Error("update lot", "err", err)
 		return fmt.Errorf("update lot: %w", err)
+	}
+	if !ok{
+		return model.ErrStatusNotChanged
 	}
 
 	return nil
@@ -285,7 +288,7 @@ func (s *service) ModerateALot(ctx context.Context, id int64, approve bool, reas
 		return fmt.Errorf("moderate lot: %w", err)
 	}
 	if !moderate {
-		return fmt.Errorf("moderate lot: %w", err)
+		return model.ErrStatusNotChanged
 	}
 	return nil
 }

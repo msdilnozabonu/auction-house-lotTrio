@@ -402,7 +402,7 @@ func TestService_UpdateStatus(t *testing.T) {
 		existing := &model.Lots{ID: 1, SellerID: 10, Status: "draft"}
 
 		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
-		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(nil)
+		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(true, nil)
 
 		svc := NewService(m)
 
@@ -418,7 +418,7 @@ func TestService_UpdateStatus(t *testing.T) {
 		existing := &model.Lots{ID: 1, SellerID: 10, Status: "live"}
 
 		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
-		m.On("UpdateStatus", mock.Anything, int64(1), "closed").Return(nil)
+		m.On("UpdateStatus", mock.Anything, int64(1), "closed").Return(true, nil)
 
 		svc := NewService(m)
 
@@ -496,13 +496,28 @@ func TestService_UpdateStatus(t *testing.T) {
 		existing := &model.Lots{ID: 1, SellerID: 10, Status: "draft"}
 
 		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
-		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(repoErr)
+		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(false, repoErr)
 
 		svc := NewService(m)
 
 		err := svc.UpdateStatus(t.Context(), 10, 1, "live")
 
 		require.ErrorContains(t, err, "update lot")
+		m.AssertExpectations(t)
+	})
+	t.Run("blocked: moderation not approved", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		existing := &model.Lots{ID: 1, SellerID: 10, Status: "draft"}
+
+		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
+		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(false, nil)
+
+		svc := NewService(m)
+
+		err := svc.UpdateStatus(t.Context(), 10, 1, "live")
+
+		require.ErrorIs(t, err, model.ErrStatusNotChanged)
 		m.AssertExpectations(t)
 	})
 }
@@ -612,7 +627,7 @@ func TestService_ModerateALot(t *testing.T) {
 
 		svc := NewService(m)
 		err := svc.ModerateALot(t.Context(), int64(1), true, "approved")
-		require.ErrorContains(t, err, "moderate lot")
+		require.ErrorIs(t, err, model.ErrStatusNotChanged)
 		m.AssertExpectations(t)
 	})
 	t.Run("reject with reason", func(t *testing.T) {
