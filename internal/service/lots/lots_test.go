@@ -572,3 +572,60 @@ func TestService_DeleteLots(t *testing.T) {
 		m.AssertExpectations(t)
 	})
 }
+
+func TestService_ModerateALot(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("ModerateLot", mock.Anything, int64(1), "approved", "approved").
+			Return(true, nil)
+
+		svc := NewService(m)
+
+		err := svc.ModerateALot(t.Context(), int64(1), true, "approved")
+
+		require.NoError(t, err)
+		m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("ModerateLot", mock.Anything, int64(1), "approved", "approved").
+			Return(false, errors.New("db error"))
+
+		svc := NewService(m)
+		derr := svc.ModerateALot(t.Context(), int64(1), true, "approved")
+		require.ErrorContains(t, derr, "db error")
+		m.AssertExpectations(t)
+	})
+	t.Run("reject without reason", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		svc := NewService(m)
+		derr := svc.ModerateALot(t.Context(), int64(1), false, "")
+		require.ErrorContains(t, derr, "reason is required")
+		m.AssertExpectations(t)
+	})
+	t.Run("no rows updated", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("ModerateLot", mock.Anything, int64(1), "approved", "approved").
+			Return(false, nil)
+
+		svc := NewService(m)
+		err := svc.ModerateALot(t.Context(), int64(1), true, "approved")
+		require.ErrorContains(t, err, "moderate lot")
+		m.AssertExpectations(t)
+	})
+	t.Run("reject with reason", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("ModerateLot", mock.Anything, int64(1), "rejected", "rejection reason").
+			Return(true, nil)
+
+		svc := NewService(m)
+
+		err := svc.ModerateALot(t.Context(), int64(1), false, "rejection reason")
+
+		require.NoError(t, err)
+		m.AssertExpectations(t)
+	})
+}
