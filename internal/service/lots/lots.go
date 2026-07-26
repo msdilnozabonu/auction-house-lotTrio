@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/repository/lots"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -278,7 +279,7 @@ func (s *service) ModerateALot(ctx context.Context, id int64, approve bool, reas
 	status := "approved"
 	if !approve{
 		if reason == "" {
-			return fmt.Errorf("reason is required")
+			return errors.New("reason is required")
 		}
 		status = "rejected"
 	}
