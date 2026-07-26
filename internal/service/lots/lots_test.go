@@ -644,3 +644,22 @@ func TestService_ModerateALot(t *testing.T) {
 		m.AssertExpectations(t)
 	})
 }
+
+func TestService_GetPlatformStats(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, nil)
+		svc:=NewService(m)
+		_, err := svc.GetPlatformStats(t.Context())
+		require.NoError(t, err)
+		m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, errors.New("db error"))
+		svc := NewService(m)
+		_, err := svc.GetPlatformStats(t.Context())
+		require.ErrorContains(t, err, "db error")
+		m.AssertExpectations(t)
+	})
+}

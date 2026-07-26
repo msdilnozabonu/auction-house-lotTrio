@@ -365,3 +365,31 @@ func TestHandler_Moderate_InternalServerError(t *testing.T) {
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 	m.AssertExpectations(t)
 }
+
+func TestHandler_GetPlatformStats_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, nil)
+	h := NewHandler(m)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/stats", nil)
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	h.GetPlatformStats(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	m.AssertExpectations(t)
+}
+
+func TestHandler_GetPlatformStats_InternalError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, errors.New("db error"))
+	h := NewHandler(m)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/stats", nil)
+	h.GetPlatformStats(c)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	m.AssertExpectations(t)
+}

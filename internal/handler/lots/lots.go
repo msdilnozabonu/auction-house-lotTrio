@@ -521,8 +521,8 @@ func (h *handler) Moderate(c *gin.Context) {
 }
 
 // GetPlatformStats godoc
-// @Summary      Аналитика площадки
-// @Description  Метрики по всем торгам: лоты по статусам, выручка, средний чек, топ-категории
+// @Summary      Аналитика лотов
+// @Description  Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, топ-категории
 // @Tags         admin
 // @Produce      json
 // @Security     BearerAuth

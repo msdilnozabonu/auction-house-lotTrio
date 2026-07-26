@@ -302,5 +302,4 @@ func (s *service) GetPlatformStats(ctx context.Context) (model.PlatformStats, er
 		return model.PlatformStats{}, fmt.Errorf("get platform stats: %w", err)
 	}
 	return stats, nil
-	
 }
