@@ -26,6 +26,7 @@ type Handler interface {
 	GetLotsForAdmin(c *gin.Context)
 	UploadPhoto(c *gin.Context)
 	GetPhoto(c *gin.Context)
+	Moderate(c *gin.Context)
 }
 
 type handler struct {
@@ -482,6 +483,40 @@ func (h *handler) GetPhoto(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"photo_path": photo})
 }
 
+// Moderate godoc
+// @Summary      Модерация лота
+// @Description  Одобрить или отклонить лот перед публикацией. При отклонении требуется причина.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true  "ID лота"
+// @Param        input body  moderateRequest  true  "Решение модерации"
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Failure      500
+// @Router       /admin/lots/{id}/moderate [put]
+func (h *handler) Moderate(c *gin.Context) {
+	id, _, err := parseID(c)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	var req moderateRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: err.Error()})
+		return
+	}
+	err = h.lotsService.ModerateALot(c.Request.Context(), id, req.Approve, req.Reason)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
+}
+
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -532,4 +567,9 @@ type pagResponse struct {
 
 type updateStatusRequest struct {
 	Status string `json:"status"`
+}
+
+type moderateRequest struct {
+	Approve bool   `json:"approve"`
+	Reason  string `json:"reason"`
 }
