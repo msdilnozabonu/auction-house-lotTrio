@@ -536,7 +536,7 @@ func (h *handler) GetPlatformStats(c *gin.Context) {
 		h.logger.Error("get lots repository", "err", err)
 		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
 	}
-	response.RespondJSON(c, http.StatusOK, gin.H{"stats": stats})
+	response.RespondJSON(c, http.StatusOK, stats)
 }
 
 func parseID(c *gin.Context) (int64, int64, error) {
