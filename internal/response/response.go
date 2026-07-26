@@ -44,6 +44,10 @@ func RespondError(c *gin.Context, err error) {
 		RespondJSON(c, http.StatusConflict, gin.H{errorKey: err.Error()})
 	case errors.Is(err, model.ErrUserAlreadyExists):
 		RespondJSON(c, http.StatusConflict, gin.H{errorKey: err.Error()})
+	case errors.Is(err, model.ErrInvalidID),
+		errors.Is(err, model.ErrUserIDNotFound),
+		errors.Is(err, model.ErrInvalidUserType):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	// 500 Internal Server Error
 	default:
 		RespondJSON(c, http.StatusInternalServerError, gin.H{errorKey: err.Error()})

@@ -4,7 +4,6 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/response"
 	"auction-house-lotTrio/internal/service/lots"
-	"errors"
 	"log/slog"
 	"net/http"
 	"path/filepath"
@@ -506,14 +505,17 @@ func (h *handler) Moderate(c *gin.Context) {
 	var req moderateRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("moderate lots repository", "err", err)
 		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: err.Error()})
 		return
 	}
 	err = h.lotsService.ModerateALot(c.Request.Context(), id, req.Approve, req.Reason)
 	if err != nil {
-		response.RespondError(c, err)
+		h.logger.Error("moderate lots repository", "err", err)
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: err.Error()})
 		return
 	}
+	h.logger.Info("moderate lots repository", "id", id, "approve", req.Approve, "reason", req.Reason)
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
 }
 
@@ -521,17 +523,17 @@ func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		return 0, 0, errors.New("invalid id")
+		return 0, 0, model.ErrInvalidID
 	}
 
 	userID, ok := c.Get("user_id")
 	if !ok {
-		return 0, 0, errors.New("user_id not found")
+		return 0, 0, model.ErrUserIDNotFound
 	}
 
 	sellerID, ok := userID.(int64)
 	if !ok {
-		return 0, 0, errors.New("user_id has invalid type")
+		return 0, 0, model.ErrInvalidUserType
 	}
 
 	return id, sellerID, nil

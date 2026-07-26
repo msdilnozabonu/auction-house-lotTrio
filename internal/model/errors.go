@@ -22,6 +22,10 @@ var (
 	ErrPhotoNotFound     = errors.New("photo not found")
 	ErrInvalidFileType   = errors.New("invalid file type")
 
+	ErrInvalidID       = errors.New("invalid id")
+	ErrUserIDNotFound  = errors.New("user_id not found")
+	ErrInvalidUserType = errors.New("user_id has invalid type")
+
 	// Tokens
 	ErrInvalidToken    = errors.New("invalid or expired token")
 	ErrSessionNotFound = errors.New("session not found")
