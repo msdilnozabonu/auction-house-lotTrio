@@ -56,8 +56,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. 
-						Доступна только админу",
+                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. Доступна только админу",
                 "produces": [
                     "application/json"
                 ],
@@ -194,6 +193,37 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/admin/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, топ-категории",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Аналитика лотов",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.PlatformStats"
+                        }
                     },
                     "401": {
                         "description": "Unauthorized"
@@ -942,6 +972,20 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CategoryStat": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "revenue": {
+                    "type": "number"
+                }
+            }
+        },
         "model.Lots": {
             "type": "object",
             "properties": {
@@ -965,7 +1009,13 @@ const docTemplate = `{
                     "type": "integer",
                     "format": "int64"
                 },
+                "moderationStatus": {
+                    "type": "string"
+                },
                 "photo": {
+                    "type": "string"
+                },
+                "rejectionReason": {
                     "type": "string"
                 },
                 "sellerID": {
@@ -988,6 +1038,29 @@ const docTemplate = `{
                 "winnerID": {
                     "type": "integer",
                     "format": "int64"
+                }
+            }
+        },
+        "model.PlatformStats": {
+            "type": "object",
+            "properties": {
+                "average_check": {
+                    "type": "number"
+                },
+                "lots_by_status": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "top_categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CategoryStat"
+                    }
+                },
+                "total_revenue": {
+                    "type": "number"
                 }
             }
         }
