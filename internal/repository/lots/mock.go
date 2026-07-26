@@ -21,6 +21,11 @@ type MockRepo struct {
 	mock.Mock
 }
 
+func (m *MockRepo) GetPlatformStats(ctx context.Context) (model.PlatformStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(model.PlatformStats), args.Error(1)
+}
+
 func (m *MockRepo) ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error) {
 	args := m.Called(ctx, id, status, reason)
 		return args.Bool(resultIndex), args.Error(errorIndex)

@@ -25,6 +25,7 @@ type Service interface {
 	UploadPhotoById(ctx context.Context, sellerID, id int64, filename string, size int64, contentType string) error
 	GetPhoto(ctx context.Context, id, sellerID int64) (string, error)
 	ModerateALot(ctx context.Context, id int64, approve bool, reason string) error
+	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
 }
 
 type service struct {
@@ -292,4 +293,14 @@ func (s *service) ModerateALot(ctx context.Context, id int64, approve bool, reas
 		return model.ErrStatusNotChanged
 	}
 	return nil
+}
+
+func (s *service) GetPlatformStats(ctx context.Context) (model.PlatformStats, error) {
+	stats, err := s.lotsRepo.GetPlatformStats(ctx)
+	if err != nil {
+		s.logger.Error("get platform stats", "err", err)
+		return model.PlatformStats{}, fmt.Errorf("get platform stats: %w", err)
+	}
+	return stats, nil
+	
 }

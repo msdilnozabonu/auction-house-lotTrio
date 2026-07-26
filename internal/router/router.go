@@ -52,6 +52,7 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		adminGroup.POST("/close-expired", lotHandler.CloseExpiredLot)
 		adminGroup.GET("/lots", lotHandler.GetLotsForAdmin)
 		adminGroup.PUT("/lots/:id/moderate", lotHandler.Moderate)
+		adminGroup.GET("/stats", lotHandler.GetPlatformStats)
 	}
 
 	engine.Static("/uploads", "./uploads")

@@ -26,6 +26,7 @@ type Handler interface {
 	UploadPhoto(c *gin.Context)
 	GetPhoto(c *gin.Context)
 	Moderate(c *gin.Context)
+	GetPlatformStats(c *gin.Context)
 }
 
 type handler struct {
@@ -517,6 +518,25 @@ func (h *handler) Moderate(c *gin.Context) {
 	}
 	h.logger.Info("moderate lots repository", "id", id, "approve", req.Approve, "reason", req.Reason)
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
+}
+
+// GetPlatformStats godoc
+// @Summary      Аналитика площадки
+// @Description  Метрики по всем торгам: лоты по статусам, выручка, средний чек, топ-категории
+// @Tags         admin
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} model.PlatformStats
+// @Failure      401
+// @Failure      500
+// @Router       /admin/stats [get]
+func (h *handler) GetPlatformStats(c *gin.Context) {
+	stats, err := h.lotsService.GetPlatformStats(c.Request.Context())
+	if err != nil {
+		h.logger.Error("get lots repository", "err", err)
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+	}
+	response.RespondJSON(c, http.StatusOK, gin.H{"stats": stats})
 }
 
 func parseID(c *gin.Context) (int64, int64, error) {
