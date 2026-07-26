@@ -152,6 +152,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/lots/{id}/moderate": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Одобрить или отклонить лот перед публикацией. При отклонении требуется причина.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Модерация лота",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Решение модерации",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.moderateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Проверяет логин и пароль, возвращает токен",
@@ -801,6 +853,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "lots.moderateRequest": {
+            "type": "object",
+            "properties": {
+                "approve": {
+                    "type": "boolean"
+                },
+                "reason": {
                     "type": "string"
                 }
             }

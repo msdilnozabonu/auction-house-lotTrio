@@ -402,7 +402,7 @@ func TestService_UpdateStatus(t *testing.T) {
 		existing := &model.Lots{ID: 1, SellerID: 10, Status: "draft"}
 
 		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
-		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(nil)
+		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(true, nil)
 
 		svc := NewService(m)
 
@@ -418,7 +418,7 @@ func TestService_UpdateStatus(t *testing.T) {
 		existing := &model.Lots{ID: 1, SellerID: 10, Status: "live"}
 
 		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
-		m.On("UpdateStatus", mock.Anything, int64(1), "closed").Return(nil)
+		m.On("UpdateStatus", mock.Anything, int64(1), "closed").Return(true, nil)
 
 		svc := NewService(m)
 
@@ -496,13 +496,28 @@ func TestService_UpdateStatus(t *testing.T) {
 		existing := &model.Lots{ID: 1, SellerID: 10, Status: "draft"}
 
 		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
-		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(repoErr)
+		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(false, repoErr)
 
 		svc := NewService(m)
 
 		err := svc.UpdateStatus(t.Context(), 10, 1, "live")
 
 		require.ErrorContains(t, err, "update lot")
+		m.AssertExpectations(t)
+	})
+	t.Run("blocked: moderation not approved", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		existing := &model.Lots{ID: 1, SellerID: 10, Status: "draft"}
+
+		m.On("GetById", mock.Anything, int64(1)).Return(existing, nil)
+		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(false, nil)
+
+		svc := NewService(m)
+
+		err := svc.UpdateStatus(t.Context(), 10, 1, "live")
+
+		require.ErrorIs(t, err, model.ErrStatusNotChanged)
 		m.AssertExpectations(t)
 	})
 }
@@ -569,6 +584,63 @@ func TestService_DeleteLots(t *testing.T) {
 		err := svc.DeleteLots(t.Context(), model.Lots{ID: 1, SellerID: 10})
 
 		require.ErrorContains(t, err, "delete lots")
+		m.AssertExpectations(t)
+	})
+}
+
+func TestService_ModerateALot(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("ModerateLot", mock.Anything, int64(1), "approved", "approved").
+			Return(true, nil)
+
+		svc := NewService(m)
+
+		err := svc.ModerateALot(t.Context(), int64(1), true, "approved")
+
+		require.NoError(t, err)
+		m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("ModerateLot", mock.Anything, int64(1), "approved", "approved").
+			Return(false, errors.New("db error"))
+
+		svc := NewService(m)
+		derr := svc.ModerateALot(t.Context(), int64(1), true, "approved")
+		require.ErrorContains(t, derr, "db error")
+		m.AssertExpectations(t)
+	})
+	t.Run("reject without reason", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		svc := NewService(m)
+		derr := svc.ModerateALot(t.Context(), int64(1), false, "")
+		require.ErrorContains(t, derr, "reason is required")
+		m.AssertExpectations(t)
+	})
+	t.Run("no rows updated", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("ModerateLot", mock.Anything, int64(1), "approved", "approved").
+			Return(false, nil)
+
+		svc := NewService(m)
+		err := svc.ModerateALot(t.Context(), int64(1), true, "approved")
+		require.ErrorIs(t, err, model.ErrStatusNotChanged)
+		m.AssertExpectations(t)
+	})
+	t.Run("reject with reason", func(t *testing.T) {
+		m := new(lots.MockRepo)
+
+		m.On("ModerateLot", mock.Anything, int64(1), "rejected", "rejection reason").
+			Return(true, nil)
+
+		svc := NewService(m)
+
+		err := svc.ModerateALot(t.Context(), int64(1), false, "rejection reason")
+
+		require.NoError(t, err)
 		m.AssertExpectations(t)
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/repository/lots"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -23,6 +24,7 @@ type Service interface {
 	FindLotsForAdmin(ctx context.Context, filter model.LotsFilter) ([]model.Lots, int, error)
 	UploadPhotoById(ctx context.Context, sellerID, id int64, filename string, size int64, contentType string) error
 	GetPhoto(ctx context.Context, id, sellerID int64) (string, error)
+	ModerateALot(ctx context.Context, id int64, approve bool, reason string) error
 }
 
 type service struct {
@@ -177,10 +179,13 @@ func (s *service) UpdateStatus(ctx context.Context, sellerID, id int64, status s
 		return model.ErrStatusNotChanged
 	}
 
-	err = s.lotsRepo.UpdateStatus(ctx, id, status)
+	ok, err = s.lotsRepo.UpdateStatus(ctx, id, status)
 	if err != nil {
 		s.logger.Error("update lot", "err", err)
 		return fmt.Errorf("update lot: %w", err)
+	}
+	if !ok{
+		return model.ErrStatusNotChanged
 	}
 
 	return nil
@@ -268,4 +273,23 @@ func (s *service) GetPhoto(ctx context.Context, id, sellerID int64) (string, err
 	}
 
 	return photo, nil
+}
+
+func (s *service) ModerateALot(ctx context.Context, id int64, approve bool, reason string) error {
+	status := "approved"
+	if !approve{
+		if reason == "" {
+			return errors.New("reason is required")
+		}
+		status = "rejected"
+	}
+	moderate, err:= s.lotsRepo.ModerateLot(ctx, id, status, reason)
+	if err!=nil {
+		s.logger.Error("moderate lot", "err", err)
+		return fmt.Errorf("moderate lot: %w", err)
+	}
+	if !moderate {
+		return model.ErrStatusNotChanged
+	}
+	return nil
 }

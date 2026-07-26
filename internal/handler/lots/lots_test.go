@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -202,7 +203,6 @@ func TestHandler_GetLotsForAdmin_DateTo(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-
 func TestHandler_GetLotsForAdmin_InvalidSellerId(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	m := new(lots.Mock)
@@ -279,4 +279,89 @@ func TestHandler_GetLotsForAdmin_Error(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodGet, "/admin/lots?status=live", nil)
 	h.GetLotsForAdmin(c)
 	require.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandler_Moderate_Approve(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("ModerateALot", mock.Anything, int64(1), true, "").Return(nil)
+	h := NewHandler(m)
+	body := `{"approve":true, "reason":""}`
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+	c.Set("user_id", int64(10))
+	h.Moderate(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	m.AssertExpectations(t)
+}
+
+func TestHandler_Moderate_RejectWithReason(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("ModerateALot", mock.Anything, int64(1), false, "rejection reason").Return(nil)
+	h := NewHandler(m)
+	body := `{"approve":false, "reason":"rejection reason"}`
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+	c.Set("user_id", int64(10))
+	h.Moderate(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	m.AssertExpectations(t)
+}
+
+func TestHandler_Moderate_InvalidId(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	 m := new(lots.Mock)
+	 h := NewHandler(m)
+	 body := `{"approve":true, "reason":""}`
+	 w := httptest.NewRecorder()
+	 c, _ := gin.CreateTestContext(w)
+	 c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/invalid/moderate", strings.NewReader(body))
+	 c.Request.Header.Set("Content-Type", "application/json")
+	 c.Params = gin.Params{{Key: "id", Value: "invalid"}}
+	 h.Moderate(c)
+	 require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandler_Moderate_BadRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	h := NewHandler(m)
+
+	// Invalid JSON body
+	body := `{"approve":true, "reason":` // malformed JSON
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+	c.Set("user_id", int64(10))
+
+	h.Moderate(c)
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandler_Moderate_InternalServerError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("ModerateALot", mock.Anything, int64(1), true, "").Return(errors.New("db error"))
+
+	h := NewHandler(m)
+	body := `{"approve":true, "reason":""}`
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+	c.Set("user_id", int64(10))
+
+	h.Moderate(c)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	m.AssertExpectations(t)
 }

@@ -35,6 +35,8 @@ const (
 	baseQuery = `SELECT id, seller_id, title, description, start_price, current_price, current_winner_id, status, 
        starts_at, ends_at, photo_path FROM lots WHERE 1=1`
 	baseCountQuery = `SELECT COUNT(*) FROM lots WHERE 1=1`
+	moderateLot = `UPDATE lots SET moderation_status = $1, rejection_reason = $2 
+            WHERE id = $3 AND moderation_status = 'pending'`
 )
 
 type Repo interface {
@@ -46,11 +48,12 @@ type Repo interface {
 	GetById(ctx context.Context, id int64) (*model.Lots, error)
 	GetByIdForBid(ctx context.Context, id int64) (*model.Lots, error)
 	UpdateLot(ctx context.Context, l model.Lots) error
-	UpdateStatus(ctx context.Context, id int64, status string) error
+	UpdateStatus(ctx context.Context, id int64, status string) (bool, error)
 	DeleteLots(ctx context.Context, id int64) error
 	FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error)
 	UploadPhoto(ctx context.Context, id int64, photo string) error
 	GetPhoto(ctx context.Context, id int64) (string, error)
+	ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error)
 }
 
 type repo struct {
@@ -176,14 +179,18 @@ func (r *repo) UpdateLot(ctx context.Context, l model.Lots) error {
 	return nil
 }
 
-func (r *repo) UpdateStatus(ctx context.Context, id int64, status string) error {
-	err := r.repo.QueryRow(ctx, `UPDATE lots SET status = $1 where id = $2 returning status, id`, status, id).
-		Scan(&status, &id)
+func (r *repo) UpdateStatus(ctx context.Context, id int64, status string) (bool, error) {
+	var returnedID int64
+	err := r.repo.QueryRow(ctx, `UPDATE lots
+    SET status = $1
+    WHERE id = $2 AND ($1 != 'live' OR moderation_status = 'approved')
+    RETURNING id`, status, id).
+		Scan(&returnedID)
 	if err != nil {
 		slog.Error("update lots by id", "err", err)
-		return fmt.Errorf("update lots: %w", err)
+		return false, fmt.Errorf("update lots: %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 func (r *repo) DeleteLots(ctx context.Context, id int64) error {
@@ -297,4 +304,12 @@ func (r *repo) GetPhoto(ctx context.Context, id int64) (string, error) {
 		return "", fmt.Errorf("get photo by id: %w", err)
 	}
 	return photo, nil
+}
+
+func (r *repo) ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error) {
+	updated, err := r.repo.Exec(ctx, moderateLot, status, reason, id)
+	if err != nil {
+		return false, fmt.Errorf("moderate lot: %w", err)
+	}
+	return updated.RowsAffected()>0, nil
 }
