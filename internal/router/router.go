@@ -5,6 +5,7 @@ import (
 	"auction-house-lotTrio/internal/handler/bid"
 	lots2 "auction-house-lotTrio/internal/handler/lots"
 	"auction-house-lotTrio/internal/handler/user"
+	"auction-house-lotTrio/internal/handler/wins"
 	"auction-house-lotTrio/internal/middleware"
 	"context"
 	"net/http"
@@ -18,7 +19,7 @@ import (
 func New(ctx context.Context, pool *pgxpool.Pool,
 	authHandler auth.Handler, userHandler user.Handler,
 	newMiddleware middleware.Middleware,
-	lotHandler lots2.Handler, bidHandler bid.Handler) (*gin.Engine, error) {
+	lotHandler lots2.Handler, bidHandler bid.Handler, winsHandler wins.Handler) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 
@@ -72,6 +73,7 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	}
 
 	api.GET("/bids", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.GetBiddersBids)
+	api.GET("/wins", newMiddleware.Auth(), middleware.RequireRole("bidder"), winsHandler.GetWins)
 
 	return engine, nil
 }

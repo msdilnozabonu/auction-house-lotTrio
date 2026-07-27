@@ -56,8 +56,8 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, 
-				поиск, пагинация. Доступна только админу",
+                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. 
+Доступна только админу",
                 "produces": [
                     "application/json"
                 ],
@@ -796,6 +796,43 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/wins": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает закрытые лоты, выигранные авторизованным участником",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wins"
+                ],
+                "summary": "Получить выигранные лоты",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Win"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1062,6 +1099,19 @@ const docTemplate = `{
                     }
                 },
                 "total_revenue": {
+        "model.Win": {
+            "type": "object",
+            "properties": {
+                "closed_at": {
+                    "type": "string"
+                },
+                "lot_id": {
+                    "type": "integer"
+                },
+                "lot_title": {
+                    "type": "string"
+                },
+                "winning_bid": {
                     "type": "number"
                 }
             }
