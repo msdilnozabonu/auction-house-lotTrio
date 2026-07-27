@@ -29,4 +29,7 @@ var (
 	// Tokens
 	ErrInvalidToken    = errors.New("invalid or expired token")
 	ErrSessionNotFound = errors.New("session not found")
+
+	// Watchlist errors
+	ErrAlreadyWatching = errors.New("lot is already in watchlist")
 )
