@@ -36,26 +36,36 @@ func TestPlaceBid_ConcurrentBids_ExactlyOneWins(t *testing.T) {
 	repo, err := New(pool)
 	require.NoError(t, err)
 
+	suffix := time.Now().UnixNano()
 	var seller, bidder1, bidder2, lotID int64
 	err = pool.QueryRow(ctx,
 		`INSERT INTO users (login, password_hash) VALUES ($1,$2) RETURNING id`,
-		"seller_"+t.Name(), "x").Scan(&seller)
+		fmt.Sprintf("seller_%d", suffix),
+		"x",
+	).Scan(&seller)
 	require.NoError(t, err)
 
 	err = pool.QueryRow(ctx,
 		`INSERT INTO users (login, password_hash) VALUES ($1,$2) RETURNING id`,
-		"bidder1_"+t.Name(), "x").Scan(&bidder1)
+		fmt.Sprintf("bidder1_%d", suffix),
+		"x",
+	).Scan(&bidder1)
 	require.NoError(t, err)
 
 	err = pool.QueryRow(ctx,
 		`INSERT INTO users (login, password_hash) VALUES ($1,$2) RETURNING id`,
-		"bidder2_"+t.Name(), "x").Scan(&bidder2)
+		fmt.Sprintf("bidder2_%d", suffix),
+		"x",
+	).Scan(&bidder2)
 	require.NoError(t, err)
 
 	err = pool.QueryRow(ctx,
 		`INSERT INTO lots (title, start_price, current_price, status, seller_id)
-		 VALUES ($1,$2,$2,'live',$3) RETURNING id`,
-		"race-lot-"+t.Name(), 100.0, seller).Scan(&lotID)
+     VALUES ($1,$2,$2,'live',$3) RETURNING id`,
+		fmt.Sprintf("race-lot_%d", suffix),
+		100.0,
+		seller,
+	).Scan(&lotID)
 	require.NoError(t, err)
 	defer func() {
 		_, _ = pool.Exec(ctx, `DELETE FROM bids WHERE lot_id = $1`, lotID)
