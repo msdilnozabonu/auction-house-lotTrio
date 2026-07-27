@@ -4,6 +4,7 @@ package bid
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -113,4 +114,61 @@ func TestPlaceBid_ConcurrentBids_ExactlyOneWins(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 1, bidCount)
+}
+
+func TestGetBidderBids_Integration(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	defer pool.Close()
+
+	repo, err := New(pool)
+	require.NoError(t, err)
+	suffix := time.Now().UnixNano()
+	var sellerID, bidderID, lotID int64
+	err = pool.QueryRow(ctx,
+		`INSERT INTO users (login, password_hash) VALUES ($1,$2) RETURNING id`,
+		fmt.Sprintf("seller_%d", suffix),"x").Scan(&sellerID)
+	require.NoError(t, err)
+
+	err = pool.QueryRow(ctx,
+		`INSERT INTO users (login, password_hash) VALUES ($1,$2) RETURNING id`,
+		fmt.Sprintf("bidder_%d", suffix), "x").Scan(&bidderID)
+	require.NoError(t, err)
+
+	err = pool.QueryRow(ctx,
+		`INSERT INTO lots (title, start_price, current_price, status, seller_id)
+		VALUES ($1,$2,$2,'closed',$3) RETURNING id`,"Test Lot", 100.0, sellerID).Scan(&lotID)
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx,
+		`INSERT INTO bids(lot_id, bidder_id, amount) VALUES ($1,$2,$3)`, lotID, bidderID, 150.0)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM bids WHERE lot_id=$1`, lotID)
+		_, _ = pool.Exec(ctx, `DELETE FROM lots WHERE id=$1`, lotID)
+		_, _ = pool.Exec(ctx, `DELETE FROM users WHERE id IN ($1,$2)`, sellerID, bidderID)
+	})
+
+	bids, err := repo.GetBidderBids(ctx, bidderID)
+
+	require.NoError(t, err)
+	require.Len(t, bids, 1)
+
+	require.Equal(t, lotID, bids[0].LotID)
+	require.Equal(t, "Test Lot", bids[0].LotTitle)
+	require.Equal(t, 150.0, bids[0].Amount)
+}
+
+func TestGetBidderBids_Empty(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	defer pool.Close()
+
+	repo, err := New(pool)
+	require.NoError(t, err)
+
+	bids, err := repo.GetBidderBids(ctx, -1)
+	require.NoError(t, err)
+	require.Empty(t, bids)
 }
