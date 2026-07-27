@@ -33,6 +33,20 @@ func NewHandler(watchService watchlist.Service) Handler {
 	}
 }
 
+// Add godoc
+//
+//	@Summary		Добавить лот в список отслеживания
+//	@Description	Добавляет лот в список по ID лота
+//	@Tags			watchlist
+//	@Security		BearerAuth
+//	@Param			id	path		int	true	"ID лота"
+//	@Success		201	{object}	map[string]string
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		409
+//	@Failure		500
+//	@Router			/lots/{id}/watch [post]
 func (h *handler) Add(c *gin.Context) {
 	lotID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -63,10 +77,23 @@ func (h *handler) Add(c *gin.Context) {
 	})
 }
 
+// Delete godoc
+//
+//	@Summary		Удалить лот из списка отслеживания
+//	@Description	Удаляет лот из списка отслеживания участника по ID лота
+//	@Tags			watchlist
+//	@Security		BearerAuth
+//	@Param			id	path		int	true	"ID лота"
+//	@Success		200	{object}	map[string]string
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		500
+//	@Router			/lots/{id}/watch [delete]
 func (h *handler) Delete(c *gin.Context) {
 	lotID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.RespondError(c, err)
+		response.RespondError(c, model.ErrInvalidID)
 		return
 	}
 
@@ -93,6 +120,21 @@ func (h *handler) Delete(c *gin.Context) {
 	})
 }
 
+// GetWatchlist godoc
+//
+//	@Summary		Получить список отслеживания
+//	@Description	Возвращает список отслеживания участника с пагинацией
+//	@Tags			watchlist
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			page	query		int	false	"Номер страницы"
+//	@Param			limit	query		int	false	"Количество элементов на странице"
+//	@Success		200	{object}	WatchlistResponse
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		500
+//	@Router			/watchlist [get]
 func (h *handler) GetWatchlist(c *gin.Context) {
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil {
@@ -143,4 +185,12 @@ func (h *handler) GetWatchlist(c *gin.Context) {
 		"total":      total,
 		"totalPages": totalPages,
 	})
+}
+
+type WatchlistResponse struct {
+	Items      []model.WatchItem `json:"items"`
+	Page       int               `json:"page"`
+	Limit      int               `json:"limit"`
+	Total      int               `json:"total"`
+	TotalPages int               `json:"totalPages"`
 }

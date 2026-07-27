@@ -178,6 +178,21 @@ definitions:
           $ref: '#/definitions/model.CategoryStat'
         type: array
       total_revenue:
+        type: number
+    type: object
+  model.WatchItem:
+    properties:
+      created_at:
+        type: string
+      current_price:
+        type: number
+      lot_id:
+        type: integer
+      lot_title:
+        type: string
+      status:
+        type: string
+    type: object
   model.Win:
     properties:
       closed_at:
@@ -188,6 +203,21 @@ definitions:
         type: string
       winning_bid:
         type: number
+    type: object
+  watchlist.WatchlistResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.WatchItem'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
     type: object
 host: localhost:9999
 info:
@@ -647,6 +677,65 @@ paths:
       summary: Смена статуса
       tags:
       - lots
+  /lots/{id}/watch:
+    delete:
+      description: Удаляет лот из списка отслеживания участника по ID лота
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Удалить лот из списка отслеживания
+      tags:
+      - watchlist
+    post:
+      description: Добавляет лот в список по ID лота
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "409":
+          description: Conflict
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Добавить лот в список отслеживания
+      tags:
+      - watchlist
   /lots/new:
     post:
       description: Создает лоты в базу
@@ -690,6 +779,38 @@ paths:
       summary: Информация о текущем пользователе
       tags:
       - user
+  /watchlist:
+    get:
+      description: Возвращает список отслеживания участника с пагинацией
+      parameters:
+      - description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - description: Количество элементов на странице
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/watchlist.WatchlistResponse'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Получить список отслеживания
+      tags:
+      - watchlist
   /wins:
     get:
       description: Возвращает закрытые лоты, выигранные авторизованным участником
