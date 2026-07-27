@@ -42,6 +42,11 @@ const (
 		FROM lots WHERE status = 'closed' AND current_winner_id IS NOT NULL`
 	topCategories = `SELECT category, COUNT(*), COALESCE(SUM(current_price), 0) FROM lots WHERE status = 'closed'
 		AND current_winner_id IS NOT NULL GROUP BY category ORDER BY SUM(current_price) DESC LIMIT 5`
+	selectMine = `Select id, seller_id, title, description,category, start_price, current_price,
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE seller_id = $1 
+      	AND ($2 = '' OR title ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
+      	AND ($3 = '' OR category = $3) AND ($4 = 0 OR current_price >= $4)
+      	AND ($5 = 0 OR current_price <= $5) ORDER BY id LIMIT $6 OFFSET $7`
 )
 
 type Repo interface {
@@ -60,6 +65,7 @@ type Repo interface {
 	GetPhoto(ctx context.Context, id int64) (string, error)
 	ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error)
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
+	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
 type repo struct {
@@ -362,4 +368,37 @@ func (r *repo) GetPlatformStats(ctx context.Context) (model.PlatformStats, error
 		return stats, fmt.Errorf("get top categories: %w", err)
 	}
 	return stats, nil
+}
+
+
+func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 15
+	}
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+	rows, err := r.repo.Query(ctx, selectMine, sellerID, filter.Search, filter.Category,
+		filter.MinPrice, filter.MaxPrice, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("get lots: %w", err)
+	}
+	defer rows.Close()
+
+	var out []model.Lots
+	for rows.Next() {
+		var p model.Lots
+		if err := rows.Scan(&p.ID, &p.SellerID, &p.Title, &p.Description, &p.Category,
+			&p.StartPrice, &p.CurrentPrice, &p.WinnerID, &p.Status, &p.StartAt, &p.EndAt, &p.Photo); err != nil {
+			return nil, 0, fmt.Errorf("get mine lots: %w", err)
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("get mine lots: %w", err)
+	}
+	return out, 0, nil
 }
