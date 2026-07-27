@@ -277,12 +277,14 @@ func TestFindLotsAdmin_Empty(t *testing.T) {
 	require.NoError(t, err)
 
 	lots, total, err := repo.FindLotsAdmin(ctx, model.LotsFilter{
+		Search: "this_lot_should_never_exist_123456789",
 		Page:  1,
 		Limit: 10,
 	})
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, total, 0)
-	require.NotNil(t, lots)
+	require.Zero(t, total)
+	require.Empty(t, lots)
 }
 
 func TestUploadPhoto_Integration(t *testing.T) {
