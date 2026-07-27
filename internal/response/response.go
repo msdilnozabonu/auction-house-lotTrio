@@ -42,7 +42,8 @@ func RespondError(c *gin.Context, err error) {
 		RespondJSON(c, http.StatusConflict, gin.H{errorKey: err.Error()})
 	case errors.Is(err, model.ErrClosed):
 		RespondJSON(c, http.StatusConflict, gin.H{errorKey: err.Error()})
-	case errors.Is(err, model.ErrUserAlreadyExists):
+	case errors.Is(err, model.ErrUserAlreadyExists),
+		errors.Is(err, model.ErrAlreadyWatching):
 		RespondJSON(c, http.StatusConflict, gin.H{errorKey: err.Error()})
 	case errors.Is(err, model.ErrInvalidID),
 		errors.Is(err, model.ErrUserIDNotFound),
