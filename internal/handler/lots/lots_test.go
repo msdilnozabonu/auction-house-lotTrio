@@ -292,7 +292,6 @@ func TestHandler_Moderate_Approve(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 	h.Moderate(c)
 	require.Equal(t, http.StatusOK, w.Code)
 	m.AssertExpectations(t)
@@ -309,7 +308,6 @@ func TestHandler_Moderate_RejectWithReason(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 	h.Moderate(c)
 	require.Equal(t, http.StatusOK, w.Code)
 	m.AssertExpectations(t)
@@ -341,7 +339,6 @@ func TestHandler_Moderate_BadRequest(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 
 	h.Moderate(c)
 	require.Equal(t, http.StatusBadRequest, w.Code)
@@ -359,7 +356,6 @@ func TestHandler_Moderate_InternalServerError(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 
 	h.Moderate(c)
 	require.Equal(t, http.StatusInternalServerError, w.Code)

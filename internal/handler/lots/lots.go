@@ -498,7 +498,7 @@ func (h *handler) GetPhoto(c *gin.Context) {
 // @Failure      500
 // @Router       /admin/lots/{id}/moderate [put]
 func (h *handler) Moderate(c *gin.Context) {
-	id, _, err := parseID(c)
+	id, err := parseLotId(c)
 	if err != nil {
 		response.RespondError(c, err)
 		return
@@ -513,7 +513,7 @@ func (h *handler) Moderate(c *gin.Context) {
 	err = h.lotsService.ModerateALot(c.Request.Context(), id, req.Approve, req.Reason)
 	if err != nil {
 		h.logger.Error("moderate lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: err.Error()})
+		response.RespondError(c, err)
 		return
 	}
 	h.logger.Info("moderate lots repository", "id", id, "approve", req.Approve, "reason", req.Reason)
@@ -559,6 +559,14 @@ func parseID(c *gin.Context) (int64, int64, error) {
 	return id, sellerID, nil
 }
 
+func parseLotId(c *gin.Context) (int64, error) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return 0, model.ErrInvalidID
+	}
+	return id, nil
+}
 type lotsRequest struct {
 	Title       string    `binding:"required" json:"title"`
 	Description string    `binding:"required" json:"description"`
