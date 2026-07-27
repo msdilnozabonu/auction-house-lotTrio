@@ -32,8 +32,8 @@ const (
 	countAll = `SELECT COUNT(*) FROM lots WHERE status = 'live' 
         AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
         AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3) AND ($4 = 0 OR current_price <= $4)`
-	baseQuery = `SELECT id, seller_id, title, description, start_price, current_price, coalesce(current_winner_id, 0), 
-       status, starts_at, ends_at, coalesce(photo_path, '') FROM lots WHERE 1=1`
+	baseQuery = `SELECT id, seller_id, title, coalesce(description, ""), start_price, current_price, 
+       coalesce(current_winner_id, 0), status, starts_at, ends_at, coalesce(photo_path, '') FROM lots WHERE 1=1`
 	baseCountQuery = `SELECT COUNT(*) FROM lots WHERE 1=1`
 	moderateLot    = `UPDATE lots SET moderation_status = $1, rejection_reason = $2 
             WHERE id = $3 AND moderation_status = 'pending'`
