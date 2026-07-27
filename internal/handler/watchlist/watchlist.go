@@ -46,7 +46,7 @@ func NewHandler(watchService watchlist.Service) Handler {
 //	@Failure		403
 //	@Failure		409
 //	@Failure		500
-//	@Router			/lots/{id}/watch [post]
+//	@Router			/lots/:id/watch [post]
 func (h *handler) Add(c *gin.Context) {
 	lotID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -89,7 +89,7 @@ func (h *handler) Add(c *gin.Context) {
 //	@Failure		401
 //	@Failure		403
 //	@Failure		500
-//	@Router			/lots/{id}/watch [delete]
+//	@Router			/lots/:id/watch [delete]
 func (h *handler) Delete(c *gin.Context) {
 	lotID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

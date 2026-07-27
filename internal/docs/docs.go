@@ -152,7 +152,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/lots/{id}/moderate": {
+        "/admin/lots/:id/moderate": {
             "put": {
                 "security": [
                     {
@@ -702,46 +702,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/lots/new": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Создает лоты в базу",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "lots"
-                ],
-                "summary": "Создать лоты",
-                "parameters": [
-                    {
-                        "description": "Добавить лот",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/lots.lotsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    }
-                }
-            }
-        },
-        "/lots/{id}/status": {
+        "/lots/:id/status": {
             "put": {
                 "security": [
                     {
@@ -766,7 +727,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/lots/{id}/watch": {
+        "/lots/:id/watch": {
             "post": {
                 "security": [
                     {
@@ -855,6 +816,45 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/lots/new": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает лоты в базу",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Создать лоты",
+                "parameters": [
+                    {
+                        "description": "Добавить лот",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.lotsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 }
             }

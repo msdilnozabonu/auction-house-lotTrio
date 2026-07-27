@@ -246,7 +246,7 @@ func (h *handler) UpdateByID(c *gin.Context) {
 //	@Success		200
 //	@Failure		401
 //	@Security		BearerAuth
-//	@Router			/lots/{id}/status [put]
+//	@Router			/lots/:id/status [put]
 func (h *handler) UpdateStatusByID(c *gin.Context) {
 	id, sellerId, err := parseID(c)
 	if err != nil {
@@ -496,7 +496,7 @@ func (h *handler) GetPhoto(c *gin.Context) {
 // @Failure      400
 // @Failure      401
 // @Failure      500
-// @Router       /admin/lots/{id}/moderate [put]
+// @Router       /admin/lots/:id/moderate [put]
 func (h *handler) Moderate(c *gin.Context) {
 	id, err := parseLotId(c)
 	if err != nil {

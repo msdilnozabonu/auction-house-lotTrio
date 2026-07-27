@@ -314,7 +314,7 @@ paths:
       summary: Получает лот по title, status, seller_id, date
       tags:
       - admin
-  /admin/lots/{id}/moderate:
+  /admin/lots/:id/moderate:
     put:
       consumes:
       - application/json
@@ -662,7 +662,7 @@ paths:
       summary: Обновление фото
       tags:
       - lots
-  /lots/{id}/status:
+  /lots/:id/status:
     put:
       description: Меняет статус лота draft→live→closed->cancelled
       produces:
@@ -677,7 +677,7 @@ paths:
       summary: Смена статуса
       tags:
       - lots
-  /lots/{id}/watch:
+  /lots/:id/watch:
     delete:
       description: Удаляет лот из списка отслеживания участника по ID лота
       parameters:
