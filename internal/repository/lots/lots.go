@@ -35,8 +35,13 @@ const (
 	baseQuery = `SELECT id, seller_id, title, description, start_price, current_price, current_winner_id, status, 
        starts_at, ends_at, photo_path FROM lots WHERE 1=1`
 	baseCountQuery = `SELECT COUNT(*) FROM lots WHERE 1=1`
-	moderateLot = `UPDATE lots SET moderation_status = $1, rejection_reason = $2 
+	moderateLot    = `UPDATE lots SET moderation_status = $1, rejection_reason = $2 
             WHERE id = $3 AND moderation_status = 'pending'`
+	lotsByStatus = `SELECT status, COUNT(*) FROM lots GROUP BY status`
+	revenue      = `SELECT COALESCE(SUM(current_price), 0), COALESCE(AVG(current_price), 0)
+		FROM lots WHERE status = 'closed' AND current_winner_id IS NOT NULL`
+	topCategories = `SELECT category, COUNT(*), COALESCE(SUM(current_price), 0) FROM lots WHERE status = 'closed'
+		AND current_winner_id IS NOT NULL GROUP BY category ORDER BY SUM(current_price) DESC LIMIT 5`
 )
 
 type Repo interface {
@@ -54,6 +59,7 @@ type Repo interface {
 	UploadPhoto(ctx context.Context, id int64, photo string) error
 	GetPhoto(ctx context.Context, id int64) (string, error)
 	ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error)
+	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
 }
 
 type repo struct {
@@ -311,5 +317,49 @@ func (r *repo) ModerateLot(ctx context.Context, id int64, status string, reason 
 	if err != nil {
 		return false, fmt.Errorf("moderate lot: %w", err)
 	}
-	return updated.RowsAffected()>0, nil
+	return updated.RowsAffected() > 0, nil
+}
+
+func (r *repo) GetPlatformStats(ctx context.Context) (model.PlatformStats, error) {
+	var stats model.PlatformStats
+	stats.LotsByStatus = make(map[string]int)
+
+	rows, err := r.repo.Query(ctx, lotsByStatus)
+	if err != nil {
+		return stats, fmt.Errorf("get lots by status: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var status string
+		var count int
+		err = rows.Scan(&status, &count)
+		if err != nil {
+			return stats, fmt.Errorf("scan status count: %w", err)
+		}
+		stats.LotsByStatus[status] = count
+	}
+	if err := rows.Err(); err != nil {
+		return stats, fmt.Errorf("get lots by status: %w", err)
+	}
+	err = r.repo.QueryRow(ctx, revenue).Scan(&stats.TotalRevenue, &stats.AverageCheck)
+	if err != nil {
+		return stats, fmt.Errorf("get lots by revenue: %w", err)
+	}
+	topCatRows, err := r.repo.Query(ctx, topCategories)
+	if err != nil {
+		return stats, fmt.Errorf("get top categories: %w", err)
+	}
+	defer topCatRows.Close()
+	for topCatRows.Next() {
+		var catStats model.CategoryStat
+		err = topCatRows.Scan(&catStats.Category, &catStats.Count, &catStats.Revenue)
+		if err != nil {
+			return stats, fmt.Errorf("scan category stats: %w", err)
+		}
+		stats.TopCategories = append(stats.TopCategories, catStats)
+	}
+	if err := rows.Err(); err != nil {
+		return stats, fmt.Errorf("get top categories: %w", err)
+	}
+	return stats, nil
 }

@@ -26,6 +26,7 @@ type Handler interface {
 	UploadPhoto(c *gin.Context)
 	GetPhoto(c *gin.Context)
 	Moderate(c *gin.Context)
+	GetPlatformStats(c *gin.Context)
 }
 
 type handler struct {
@@ -497,7 +498,7 @@ func (h *handler) GetPhoto(c *gin.Context) {
 // @Failure      500
 // @Router       /admin/lots/{id}/moderate [put]
 func (h *handler) Moderate(c *gin.Context) {
-	id, _, err := parseID(c)
+	id, err := parseLotId(c)
 	if err != nil {
 		response.RespondError(c, err)
 		return
@@ -512,11 +513,30 @@ func (h *handler) Moderate(c *gin.Context) {
 	err = h.lotsService.ModerateALot(c.Request.Context(), id, req.Approve, req.Reason)
 	if err != nil {
 		h.logger.Error("moderate lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: err.Error()})
+		response.RespondError(c, err)
 		return
 	}
 	h.logger.Info("moderate lots repository", "id", id, "approve", req.Approve, "reason", req.Reason)
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
+}
+
+// GetPlatformStats godoc
+// @Summary      Аналитика лотов
+// @Description  Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, топ-категории
+// @Tags         admin
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} model.PlatformStats
+// @Failure      401
+// @Failure      500
+// @Router       /admin/stats [get]
+func (h *handler) GetPlatformStats(c *gin.Context) {
+	stats, err := h.lotsService.GetPlatformStats(c.Request.Context())
+	if err != nil {
+		h.logger.Error("get lots repository", "err", err)
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+	}
+	response.RespondJSON(c, http.StatusOK, stats)
 }
 
 func parseID(c *gin.Context) (int64, int64, error) {
@@ -539,6 +559,14 @@ func parseID(c *gin.Context) (int64, int64, error) {
 	return id, sellerID, nil
 }
 
+func parseLotId(c *gin.Context) (int64, error) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return 0, model.ErrInvalidID
+	}
+	return id, nil
+}
 type lotsRequest struct {
 	Title       string    `binding:"required" json:"title"`
 	Description string    `binding:"required" json:"description"`

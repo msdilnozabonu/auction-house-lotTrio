@@ -17,6 +17,11 @@ type Mock struct {
 	mock.Mock
 }
 
+func (m *Mock) GetPlatformStats(ctx context.Context) (model.PlatformStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(model.PlatformStats), args.Error(1)
+}
+
 func (m *Mock) ModerateALot(ctx context.Context, id int64, approve bool, reason string) error {
 	args := m.Called(ctx, id, approve, reason)
 		return args.Error(0)

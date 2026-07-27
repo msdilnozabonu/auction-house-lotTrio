@@ -118,6 +118,15 @@ definitions:
       lot_title:
         type: string
     type: object
+  model.CategoryStat:
+    properties:
+      category:
+        type: string
+      count:
+        type: integer
+      revenue:
+        type: number
+    type: object
   model.Lots:
     properties:
       category:
@@ -156,6 +165,19 @@ definitions:
         format: int64
         type: integer
     type: object
+  model.PlatformStats:
+    properties:
+      average_check:
+        type: number
+      lots_by_status:
+        additionalProperties:
+          type: integer
+        type: object
+      top_categories:
+        items:
+          $ref: '#/definitions/model.CategoryStat'
+        type: array
+      total_revenue:
   model.Win:
     properties:
       closed_at:
@@ -294,6 +316,26 @@ paths:
       security:
       - BearerAuth: []
       summary: Модерация лота
+      tags:
+      - admin
+  /admin/stats:
+    get:
+      description: 'Метрики по всем торгам: лоты по статусам, суммарная выручка, средний
+        чек, топ-категории'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.PlatformStats'
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Аналитика лотов
       tags:
       - admin
   /auth/login:

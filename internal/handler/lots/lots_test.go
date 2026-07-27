@@ -292,7 +292,6 @@ func TestHandler_Moderate_Approve(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 	h.Moderate(c)
 	require.Equal(t, http.StatusOK, w.Code)
 	m.AssertExpectations(t)
@@ -309,7 +308,6 @@ func TestHandler_Moderate_RejectWithReason(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 	h.Moderate(c)
 	require.Equal(t, http.StatusOK, w.Code)
 	m.AssertExpectations(t)
@@ -341,7 +339,6 @@ func TestHandler_Moderate_BadRequest(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 
 	h.Moderate(c)
 	require.Equal(t, http.StatusBadRequest, w.Code)
@@ -359,9 +356,36 @@ func TestHandler_Moderate_InternalServerError(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/1/moderate", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Set("user_id", int64(10))
 
 	h.Moderate(c)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	m.AssertExpectations(t)
+}
+
+func TestHandler_GetPlatformStats_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, nil)
+	h := NewHandler(m)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/stats", nil)
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	h.GetPlatformStats(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	m.AssertExpectations(t)
+}
+
+func TestHandler_GetPlatformStats_InternalError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, errors.New("db error"))
+	h := NewHandler(m)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/stats", nil)
+	h.GetPlatformStats(c)
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 	m.AssertExpectations(t)
 }
