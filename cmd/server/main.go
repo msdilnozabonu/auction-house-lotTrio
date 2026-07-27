@@ -5,18 +5,21 @@ import (
 	bidhandler "auction-house-lotTrio/internal/handler/bid"
 	lots2 "auction-house-lotTrio/internal/handler/lots"
 	userhandler "auction-house-lotTrio/internal/handler/user"
+	watchlisthandler "auction-house-lotTrio/internal/handler/watchlist"
 	winshandler "auction-house-lotTrio/internal/handler/wins"
 	"auction-house-lotTrio/internal/middleware"
 	bidrepo "auction-house-lotTrio/internal/repository/bid"
 	"auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
+	"auction-house-lotTrio/internal/repository/watchlist"
 	winsrepo "auction-house-lotTrio/internal/repository/wins"
 	"auction-house-lotTrio/internal/router"
 	auth2 "auction-house-lotTrio/internal/service/auth"
 	bidservice "auction-house-lotTrio/internal/service/bid"
 	lots3 "auction-house-lotTrio/internal/service/lots"
 	userservice "auction-house-lotTrio/internal/service/user"
+	watchlistservice "auction-house-lotTrio/internal/service/watchlist"
 	winsservice "auction-house-lotTrio/internal/service/wins"
 	"context"
 	"errors"
@@ -183,7 +186,16 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	winsService := winsservice.NewService(winsRepo)
 	winsHandler := winshandler.NewHandler(winsService)
 
-	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler, bidHandler, winsHandler)
+	watchlistRepo, err := watchlist.New(pool)
+	if err != nil {
+		slog.Error("create watchlist repository", "err", err)
+		os.Exit(1)
+	}
+	watchlistService := watchlistservice.NewService(watchlistRepo)
+	watchlistHandler := watchlisthandler.NewHandler(watchlistService)
+
+	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler, bidHandler, winsHandler,
+		watchlistHandler)
 
 	if err != nil {
 		return nil, fmt.Errorf("create router: %w", err)

@@ -5,6 +5,7 @@ import (
 	"auction-house-lotTrio/internal/handler/bid"
 	lots2 "auction-house-lotTrio/internal/handler/lots"
 	"auction-house-lotTrio/internal/handler/user"
+	"auction-house-lotTrio/internal/handler/watchlist"
 	"auction-house-lotTrio/internal/handler/wins"
 	"auction-house-lotTrio/internal/middleware"
 	"context"
@@ -16,10 +17,12 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// nolint:funlen
 func New(ctx context.Context, pool *pgxpool.Pool,
 	authHandler auth.Handler, userHandler user.Handler,
 	newMiddleware middleware.Middleware,
-	lotHandler lots2.Handler, bidHandler bid.Handler, winsHandler wins.Handler) (*gin.Engine, error) {
+	lotHandler lots2.Handler, bidHandler bid.Handler, winsHandler wins.Handler,
+	watchlistHandler watchlist.Handler) (*gin.Engine, error) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 
@@ -59,21 +62,26 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	engine.Static("/uploads", "./uploads")
 
 	lotsGroup := api.Group("/lots")
+	lotsGroup.Use(newMiddleware.Auth())
 	{
-		lotsGroup.POST("/new", newMiddleware.Auth(), lotHandler.CreateLot)
-		lotsGroup.GET("", newMiddleware.Auth(), lotHandler.GetAll)
-		lotsGroup.GET("/:id", newMiddleware.Auth(), lotHandler.GetByID)
-		lotsGroup.PUT("/:id", newMiddleware.Auth(), lotHandler.UpdateByID)
-		lotsGroup.PUT("/:id/status", newMiddleware.Auth(), lotHandler.UpdateStatusByID)
-		lotsGroup.DELETE("/:id", newMiddleware.Auth(), lotHandler.DeleteLots)
-		lotsGroup.POST("/:id/photo", newMiddleware.Auth(), lotHandler.UploadPhoto)
-		lotsGroup.GET("/:id/photo", newMiddleware.Auth(), lotHandler.GetPhoto)
+		lotsGroup.POST("/new", lotHandler.CreateLot)
+		lotsGroup.GET("", lotHandler.GetAll)
+		lotsGroup.GET("/:id", lotHandler.GetByID)
+		lotsGroup.PUT("/:id", lotHandler.UpdateByID)
+		lotsGroup.PUT("/:id/status", lotHandler.UpdateStatusByID)
+		lotsGroup.DELETE("/:id", lotHandler.DeleteLots)
+		lotsGroup.POST("/:id/photo", lotHandler.UploadPhoto)
+		lotsGroup.GET("/:id/photo", lotHandler.GetPhoto)
 
-		lotsGroup.POST("/:id/bid", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.PlaceBid)
+		lotsGroup.POST("/:id/bid", middleware.RequireRole("bidder"), bidHandler.PlaceBid)
+
+		lotsGroup.POST("/:id/watch", middleware.RequireRole("bidder"), watchlistHandler.Add)
+		lotsGroup.DELETE("/:id/watch", middleware.RequireRole("bidder"), watchlistHandler.Delete)
 	}
 
 	api.GET("/bids", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.GetBiddersBids)
 	api.GET("/wins", newMiddleware.Auth(), middleware.RequireRole("bidder"), winsHandler.GetWins)
+	api.GET("/watchlist", newMiddleware.Auth(), middleware.RequireRole("bidder"), watchlistHandler.GetWatchlist)
 
 	return engine, nil
 }
