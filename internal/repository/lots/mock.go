@@ -26,9 +26,15 @@ func (m *MockRepo) GetPlatformStats(ctx context.Context) (model.PlatformStats, e
 	return args.Get(0).(model.PlatformStats), args.Error(1)
 }
 
+func (m *MockRepo) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots,
+	int, error) {
+	args := m.Called(ctx, sellerID, filter)
+	return args.Get(resultIndex).([]model.Lots), args.Int(totalIndex), args.Error(getAllErrIndex)
+}
+
 func (m *MockRepo) ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error) {
 	args := m.Called(ctx, id, status, reason)
-		return args.Bool(resultIndex), args.Error(errorIndex)
+	return args.Bool(resultIndex), args.Error(errorIndex)
 }
 
 func (m *MockRepo) FindLotsAdmin(ctx context.Context, lots model.LotsFilter) ([]model.Lots, int, error) {

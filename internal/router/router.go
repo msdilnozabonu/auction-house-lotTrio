@@ -72,6 +72,7 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		lotsGroup.DELETE("/:id", lotHandler.DeleteLots)
 		lotsGroup.POST("/:id/photo", lotHandler.UploadPhoto)
 		lotsGroup.GET("/:id/photo", lotHandler.GetPhoto)
+		lotsGroup.GET("/mine", newMiddleware.Auth(), lotHandler.GetMine)
 
 		lotsGroup.POST("/:id/bid", middleware.RequireRole("bidder"), bidHandler.PlaceBid)
 

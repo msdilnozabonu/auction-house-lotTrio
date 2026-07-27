@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/response"
 	"auction-house-lotTrio/internal/service/lots"
+	"errors"
 	"log/slog"
 	"net/http"
 	"path/filepath"
@@ -27,6 +28,7 @@ type Handler interface {
 	GetPhoto(c *gin.Context)
 	Moderate(c *gin.Context)
 	GetPlatformStats(c *gin.Context)
+	GetMine(c *gin.Context)
 }
 
 type handler struct {
@@ -122,25 +124,8 @@ func (h *handler) CreateLot(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Router			/lots [get]
 func (h *handler) GetAll(c *gin.Context) {
-	minPrice, _ := strconv.ParseFloat(c.Query("minPrice"), 64)
-	maxPrice, _ := strconv.ParseFloat(c.Query("maxPrice"), 64)
-	page, _ := strconv.Atoi(c.Query("page"))
-	limit, _ := strconv.Atoi(c.Query("limit"))
-	if page <= 0 {
-		page = 1
-	}
-	if limit <= 0 {
-		limit = 15
-	}
+	filter := filterParse(c)
 
-	filter := model.LotsFilter{
-		Search:   c.Query("search"),
-		Category: c.Query("category"),
-		MinPrice: minPrice,
-		MaxPrice: maxPrice,
-		Page:     page,
-		Limit:    limit,
-	}
 	items, total, err := h.lotsService.GetAll(c.Request.Context(), filter)
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
@@ -149,9 +134,10 @@ func (h *handler) GetAll(c *gin.Context) {
 	}
 	totalPages := 0
 	if total > 0 {
-		totalPages = (total + limit - 1) / limit
+		totalPages = (total + filter.Limit - 1) / filter.Limit
 	}
-	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, Page: page, Limit: limit, TotalPages: totalPages})
+	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, Page: filter.Page,
+		Limit: filter.Limit, TotalPages: totalPages})
 }
 
 // GetByID godoc
@@ -520,6 +506,35 @@ func (h *handler) Moderate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
 }
 
+func (h *handler) GetMine(c *gin.Context) {
+	filter := filterParse(c)
+
+	userID, ok := c.Get("user_id")
+	if !ok {
+		response.RespondError(c, errors.New("no user_id found"))
+		return
+	}
+
+	sellerID, ok := userID.(int64)
+	if !ok {
+		response.RespondError(c, errors.New("no user_id found"))
+		return
+	}
+
+	items, total, err := h.lotsService.GetMineLots(c.Request.Context(), sellerID, filter)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + filter.Limit - 1) / filter.Limit
+	}
+
+	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, TotalPages: totalPages})
+}
+
 // GetPlatformStats godoc
 // @Summary      Аналитика лотов
 // @Description  Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, топ-категории
@@ -567,6 +582,31 @@ func parseLotId(c *gin.Context) (int64, error) {
 	}
 	return id, nil
 }
+
+func filterParse(c *gin.Context) model.LotsFilter {
+	minPrice, _ := strconv.ParseFloat(c.Query("minPrice"), 64)
+	maxPrice, _ := strconv.ParseFloat(c.Query("maxPrice"), 64)
+	page, _ := strconv.Atoi(c.Query("page"))
+	limit, _ := strconv.Atoi(c.Query("limit"))
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 15
+	}
+
+	filter := model.LotsFilter{
+		Search:   c.Query("search"),
+		Category: c.Query("category"),
+		MinPrice: minPrice,
+		MaxPrice: maxPrice,
+		Page:     page,
+		Limit:    limit,
+	}
+
+	return filter
+}
+
 type lotsRequest struct {
 	Title       string    `binding:"required" json:"title"`
 	Description string    `binding:"required" json:"description"`
