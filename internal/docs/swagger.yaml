@@ -134,7 +134,11 @@ definitions:
       id:
         format: int64
         type: integer
+      moderationStatus:
+        type: string
       photo:
+        type: string
+      rejectionReason:
         type: string
       sellerID:
         format: int64
@@ -151,6 +155,17 @@ definitions:
       winnerID:
         format: int64
         type: integer
+    type: object
+  model.Win:
+    properties:
+      closed_at:
+        type: string
+      lot_id:
+        type: integer
+      lot_title:
+        type: string
+      winning_bid:
+        type: number
     type: object
 host: localhost:9999
 info:
@@ -633,6 +648,29 @@ paths:
       summary: Информация о текущем пользователе
       tags:
       - user
+  /wins:
+    get:
+      description: Возвращает закрытые лоты, выигранные авторизованным участником
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Win'
+            type: array
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Получить выигранные лоты
+      tags:
+      - wins
 securityDefinitions:
   BearerAuth:
     in: header

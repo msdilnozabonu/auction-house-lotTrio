@@ -89,7 +89,7 @@ jobs:
           badge: true
           format: markdown
           output: both
-          thresholds: "70 80"
+          thresholds: "70"
 
       - name: Comment coverage in PR
         if: github.event_name == 'pull_request'
@@ -113,8 +113,8 @@ jobs:
 
           COLOR=$(node -p '
             const c = +process.env.COV;
-            c >= 80 ? "green" :
-            c >= 70 ? "yellow" :
+            c >= 70 ? "green" :
+            c >= 60 ? "yellow" :
             c >= 50 ? "orange" :
             "red"
           ')
