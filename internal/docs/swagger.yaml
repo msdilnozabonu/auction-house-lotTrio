@@ -178,6 +178,8 @@ definitions:
           $ref: '#/definitions/model.CategoryStat'
         type: array
       total_revenue:
+        type: number
+    type: object
   model.Win:
     properties:
       closed_at:
@@ -214,6 +216,37 @@ paths:
       security:
       - BearerAuth: []
       summary: Закрыть просроченные лоты
+      tags:
+      - admin
+  /admin/export:
+    get:
+      description: Выгружает лоты за период в формате CSV или JSON
+      parameters:
+      - description: 'Формат: json или csv (по умолчанию json)'
+        in: query
+        name: format
+        type: string
+      - description: Начало периода (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Конец периода (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Экспорт отчёта по лотам
       tags:
       - admin
   /admin/lots:

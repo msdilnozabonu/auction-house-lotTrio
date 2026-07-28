@@ -49,6 +49,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/export": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Выгружает лоты за период в формате CSV или JSON",
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Экспорт отчёта по лотам",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Формат: json или csv (по умолчанию json)",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Начало периода (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Конец периода (YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
         "/admin/lots": {
             "get": {
                 "security": [
@@ -56,8 +105,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. 
-Доступна только админу",
+                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. Доступна только админу",
                 "produces": [
                     "application/json"
                 ],
@@ -211,8 +259,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Метрики по всем торгам: лоты по статусам, 
-				суммарная выручка, средний чек, топ-категории",
+                "description": "Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, топ-категории",
                 "produces": [
                     "application/json"
                 ],
@@ -1099,6 +1146,10 @@ const docTemplate = `{
                     }
                 },
                 "total_revenue": {
+                    "type": "number"
+                }
+            }
+        },
         "model.Win": {
             "type": "object",
             "properties": {
