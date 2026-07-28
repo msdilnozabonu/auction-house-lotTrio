@@ -175,7 +175,7 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 		slog.Error("create bid repository: %w", "err", err)
 		os.Exit(1)
 	}
-	bidService := bidservice.NewService(bidRepo)
+	bidService := bidservice.NewService(bidRepo, lotsRepo)
 	bidHandler := bidhandler.NewHandler(bidService)
 
 	winsRepo, err := winsrepo.New(pool)
