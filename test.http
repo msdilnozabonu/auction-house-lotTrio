@@ -172,3 +172,7 @@ Authorization: Bearer {{accessToken}}
 GET http://localhost:9999/api/v1/admin/stats
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+
+###
+GET http://localhost:9999/api/v1/admin/export?format=json&date_from=2026-07-01
+Authorization: Bearer {{accessToken}}

@@ -26,6 +26,7 @@ type Service interface {
 	GetPhoto(ctx context.Context, id, sellerID int64) (string, error)
 	ModerateALot(ctx context.Context, id int64, approve bool, reason string) error
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
+	ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error)
 }
 
 type service struct {
@@ -302,4 +303,13 @@ func (s *service) GetPlatformStats(ctx context.Context) (model.PlatformStats, er
 		return model.PlatformStats{}, fmt.Errorf("get platform stats: %w", err)
 	}
 	return stats, nil
+}
+
+func (s *service) ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error)  {
+	rows, err := s.lotsRepo.ExportLots(ctx, "ends_at", from, to)
+	if err != nil {
+		s.logger.Error("export lots", "err", err)
+		return nil, fmt.Errorf("export lots: %w", err)
+	}
+	return rows, nil
 }

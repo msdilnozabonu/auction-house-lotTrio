@@ -17,6 +17,11 @@ type Mock struct {
 	mock.Mock
 }
 
+func (m *Mock) ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error) {
+	args := m.Called(ctx, from, to)
+		return args.Get(0).([]model.LotsExport), args.Error(1)
+}
+
 func (m *Mock) GetPlatformStats(ctx context.Context) (model.PlatformStats, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(model.PlatformStats), args.Error(1)
