@@ -32,8 +32,8 @@ const (
 	countAll = `SELECT COUNT(*) FROM lots WHERE status = 'live' 
         AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
         AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3) AND ($4 = 0 OR current_price <= $4)`
-	baseQuery = `SELECT id, seller_id, title, description, start_price, current_price, current_winner_id, status, 
-       starts_at, ends_at, photo_path FROM lots WHERE 1=1`
+	baseQuery = `SELECT id, seller_id, title, coalesce(description, ''), start_price, current_price, 
+       coalesce(current_winner_id, 0), status, starts_at, ends_at, coalesce(photo_path, '') FROM lots WHERE 1=1`
 	baseCountQuery = `SELECT COUNT(*) FROM lots WHERE 1=1`
 	moderateLot    = `UPDATE lots SET moderation_status = $1, rejection_reason = $2 
             WHERE id = $3 AND moderation_status = 'pending'`
@@ -44,6 +44,11 @@ const (
 		AND current_winner_id IS NOT NULL GROUP BY category ORDER BY SUM(current_price) DESC LIMIT 5`
 lotExport = `SELECT id, title, category, status, seller_id, current_price, ends_at 
 	FROM lots WHERE %s BETWEEN $1 AND $2 ORDER BY id`
+	selectMine = `Select id, seller_id, title, description,category, start_price, current_price,
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE seller_id = $1 
+      	AND ($2 = '' OR title ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
+      	AND ($3 = '' OR category = $3) AND ($4 = 0 OR current_price >= $4)
+      	AND ($5 = 0 OR current_price <= $5) ORDER BY id LIMIT $6 OFFSET $7`
 )
 
 type Repo interface {
@@ -64,6 +69,7 @@ type Repo interface {
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
 	ExportLots(ctx context.Context, dateField string, dateFrom, dateTo time.Time) (
 		[]model.LotsExport, error)
+	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
 type repo struct {
@@ -388,4 +394,35 @@ func (r *repo) ExportLots(ctx context.Context, dateField string, dateFrom, dateT
 		return nil, fmt.Errorf("export lots: %w", err)
 	}
 	return result, nil
+
+func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 15
+	}
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+	rows, err := r.repo.Query(ctx, selectMine, sellerID, filter.Search, filter.Category,
+		filter.MinPrice, filter.MaxPrice, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("get lots: %w", err)
+	}
+	defer rows.Close()
+
+	var out []model.Lots
+	for rows.Next() {
+		var p model.Lots
+		if err := rows.Scan(&p.ID, &p.SellerID, &p.Title, &p.Description, &p.Category,
+			&p.StartPrice, &p.CurrentPrice, &p.WinnerID, &p.Status, &p.StartAt, &p.EndAt, &p.Photo); err != nil {
+			return nil, 0, fmt.Errorf("get mine lots: %w", err)
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("get mine lots: %w", err)
+	}
+	return out, 0, nil
 }
