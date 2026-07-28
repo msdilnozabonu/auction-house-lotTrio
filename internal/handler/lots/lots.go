@@ -67,6 +67,8 @@ const (
 	messageKey    = "message"
 	errorMsg      = "error"
 	pageSizeLimit = 20
+	internalErrorMsg = "internal server error"
+	jsonFormat = "json"
 )
 
 // CreateLot     godoc
@@ -385,7 +387,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 	items, total, err := h.lotsService.FindLotsForAdmin(c.Request.Context(), filter)
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: internalErrorMsg})
 		return
 	}
 	totalPages := (total + filter.Limit - 1) / filter.Limit
@@ -536,7 +538,7 @@ func (h *handler) GetPlatformStats(c *gin.Context) {
 	stats, err := h.lotsService.GetPlatformStats(c.Request.Context())
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: internalErrorMsg})
 	}
 	response.RespondJSON(c, http.StatusOK, stats)
 }
@@ -557,9 +559,9 @@ func (h *handler) GetPlatformStats(c *gin.Context) {
 func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
 	format := c.Query("format")
 	if format == "" {
-		format = "json"
+		format = jsonFormat
 	}
-	if format != "json" && format != "csv" {
+	if format != jsonFormat && format != "csv" {
 		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid format"})
 		return
 	}
@@ -586,10 +588,10 @@ func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
 	l, err := h.lotsService.ExportLots(c.Request.Context(), from, to)
 	if err != nil {
 		h.logger.Error("export lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: internalErrorMsg})
 		return
 	}
-	if format == "json" {
+	if format == jsonFormat {
 		c.Header("Content-Disposition", "attachment; filename=lots_export.json")
 		response.RespondJSON(c, http.StatusOK, l)
 		return
