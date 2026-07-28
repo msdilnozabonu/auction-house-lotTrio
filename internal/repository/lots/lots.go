@@ -383,9 +383,9 @@ func (r *repo) ExportLots(ctx context.Context, dateField string, dateFrom, dateT
 	}
 	defer rows.Close()
 	var result []model.LotsExport
-	for rows.Next(){
+	for rows.Next() {
 		var l model.LotsExport
-		if err := rows.Scan(&l.ID, &l.Title, &l.Category, &l.Status, &l.SellerID, &l.Price, &l.EndsAt); err != nil{
+		if err := rows.Scan(&l.ID, &l.Title, &l.Category, &l.Status, &l.SellerID, &l.Price, &l.EndsAt); err != nil {
 			return nil, fmt.Errorf("scan lots export: %w", err)
 		}
 		result = append(result, l)
@@ -394,6 +394,7 @@ func (r *repo) ExportLots(ctx context.Context, dateField string, dateFrom, dateT
 		return nil, fmt.Errorf("export lots: %w", err)
 	}
 	return result, nil
+}
 
 func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
 	limit := filter.Limit
