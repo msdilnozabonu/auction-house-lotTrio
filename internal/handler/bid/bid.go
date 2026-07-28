@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/response"
 	"auction-house-lotTrio/internal/service/bid"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -13,6 +14,8 @@ import (
 
 const (
 	messageKey = "message"
+	defaultPage      = 1
+	defaultPageLimit = 15
 )
 
 type Handler interface {
@@ -36,7 +39,7 @@ func NewHandler(bidsService bid.Service) Handler {
 // PlaceBid godoc
 //
 //	@Summary		Сделать ставку
-//	@Description	Размещает ставку на активный лот
+//	@Description	Размещает ставку на активный лот. Сумма ставки должна соответствовать минимальному шагу ставки.
 //	@Tags			bids
 //	@Accept			json
 //	@Produce		json
@@ -58,7 +61,7 @@ func (h *handler) PlaceBid(c *gin.Context) {
 
 	lotID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.RespondError(c, err)
+		response.RespondError(c, model.ErrInvalidID)
 		return
 	}
 
@@ -121,32 +124,80 @@ func (h *handler) GetBiddersBids(c *gin.Context) {
 	response.RespondJSON(c, http.StatusOK, bids)
 }
 
+// GetBidsByLotID godoc
+//
+// @Summary      Получить ставки по лоту
+// @Description  Возвращает историю ставок по указанному лоту.
+// @Description  Участник получает историю с пагинацией.
+// @Description  Продавец получает ставки по своему лоту.
+// @Tags         bids
+// @Produce      json
+// @Param        id      path    int true  "ID лота"
+// @Param        page    query   int false "Номер страницы (для участника)"
+// @Param        limit   query   int false "Количество элементов на странице (для участника)"
+// @Success      200     {array} model.Bid
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      404
+// @Failure      500
+// @Security     BearerAuth
+// @Router       /lots/{id}/bids [get]
 func (h *handler) GetBidsByLotID(c *gin.Context) {
 	lotID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.RespondError(c, err)
+		response.RespondError(c, model.ErrInvalidID)
 		return
 	}
 
-	userID, ok := c.Get("user_id")
-	if !ok {
-		response.RespondError(c, model.ErrUnauthorized)
-		return
-	}
+	role := c.GetString("role")
+	var bids []model.Bid
+	switch role {
+	case "bidder":
+		bids, err = h.getBidderBidsByLot(c, lotID)
+	case "seller":
+		userID, ok := c.Get("user_id")
+		if !ok {
+			response.RespondError(c, model.ErrUnauthorized)
+			return
+		}
 
-	sellerID, ok := userID.(int64)
-	if !ok {
+		sellerID, ok := userID.(int64)
+		if !ok {
+			response.RespondError(c, model.ErrForbidden)
+			return
+		}
+
+		bids, err = h.bidsService.GetBidsByLotIDForSeller(c.Request.Context(), lotID, sellerID)
+
+	default:
 		response.RespondError(c, model.ErrForbidden)
 		return
 	}
-
-	bids, err := h.bidsService.GetBidsByLotID(c.Request.Context(), lotID, sellerID)
 	if err != nil {
-		h.logger.Error("get my bids", "err", err)
+		h.logger.Error("get my bids by lot", "err", err)
 		response.RespondError(c, err)
 		return
 	}
 	response.RespondJSON(c, http.StatusOK, bids)
+}
+
+func (h *handler) getBidderBidsByLot(c *gin.Context, lotID int64) ([]model.Bid, error) {
+	page := defaultPage
+	if p, err := strconv.Atoi(c.DefaultQuery("page", strconv.Itoa(defaultPage))); err == nil && p > 0 {
+		page = p
+	}
+
+	limit := defaultPageLimit
+	if l, err := strconv.Atoi(c.DefaultQuery("limit", strconv.Itoa(defaultPageLimit))); err == nil && l > 0 {
+		limit = l
+	}
+
+	bids, err := h.bidsService.GetBidsByLotIDForBidder(c.Request.Context(), lotID, page, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get bids by lot for bidder: %w", err)
+	}
+	return bids, nil
 }
 
 type PlaceBidRequest struct {
