@@ -27,9 +27,14 @@ func (m *Mock) GetPlatformStats(ctx context.Context) (model.PlatformStats, error
 	return args.Get(0).(model.PlatformStats), args.Error(1)
 }
 
+func (m *Mock) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
+	m.Called(ctx, sellerID, filter)
+	return nil, 0, nil
+}
+
 func (m *Mock) ModerateALot(ctx context.Context, id int64, approve bool, reason string) error {
 	args := m.Called(ctx, id, approve, reason)
-		return args.Error(0)
+	return args.Error(0)
 }
 
 func (m *Mock) UploadPhotoById(ctx context.Context, sellerID, id int64, filename string,

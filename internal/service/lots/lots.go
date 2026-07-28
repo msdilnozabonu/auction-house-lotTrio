@@ -27,6 +27,7 @@ type Service interface {
 	ModerateALot(ctx context.Context, id int64, approve bool, reason string) error
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
 	ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error)
+	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
 type service struct {
@@ -186,7 +187,7 @@ func (s *service) UpdateStatus(ctx context.Context, sellerID, id int64, status s
 		s.logger.Error("update lot", "err", err)
 		return fmt.Errorf("update lot: %w", err)
 	}
-	if !ok{
+	if !ok {
 		return model.ErrStatusNotChanged
 	}
 
@@ -279,14 +280,14 @@ func (s *service) GetPhoto(ctx context.Context, id, sellerID int64) (string, err
 
 func (s *service) ModerateALot(ctx context.Context, id int64, approve bool, reason string) error {
 	status := "approved"
-	if !approve{
+	if !approve {
 		if reason == "" {
 			return errors.New("reason is required")
 		}
 		status = "rejected"
 	}
-	moderate, err:= s.lotsRepo.ModerateLot(ctx, id, status, reason)
-	if err!=nil {
+	moderate, err := s.lotsRepo.ModerateLot(ctx, id, status, reason)
+	if err != nil {
 		s.logger.Error("moderate lot", "err", err)
 		return fmt.Errorf("moderate lot: %w", err)
 	}
@@ -312,4 +313,12 @@ func (s *service) ExportLots(ctx context.Context, from, to time.Time) ([]model.L
 		return nil, fmt.Errorf("export lots: %w", err)
 	}
 	return rows, nil
+}
+func (s *service) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
+	items, total, err := s.lotsRepo.GetMineLots(ctx, sellerID, filter)
+	if err != nil {
+		s.logger.Error("get mine lots", "err", err)
+		return nil, 0, fmt.Errorf("get mine lots: %w", err)
+	}
+	return items, total, nil
 }

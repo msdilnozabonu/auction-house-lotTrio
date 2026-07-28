@@ -2,6 +2,7 @@ package bid
 
 import (
 	repoBid "auction-house-lotTrio/internal/repository/bid"
+	"auction-house-lotTrio/internal/repository/lots"
 	"context"
 	"errors"
 	"testing"
@@ -11,9 +12,10 @@ import (
 )
 
 func TestService_PlaceBid(t *testing.T) {
+
 	t.Run("success", func(t *testing.T) {
 		m := new(repoBid.MockRepo)
-
+		n := new(lots.MockRepo)
 		m.On("PlaceBid",
 			mock.Anything,
 			int64(1),
@@ -21,7 +23,7 @@ func TestService_PlaceBid(t *testing.T) {
 			100.0,
 		).Return(nil)
 
-		svc := NewService(m)
+		svc := NewService(m, n)
 		err := svc.PlaceBid(context.Background(), 1, 2, 100)
 		require.NoError(t, err)
 		m.AssertExpectations(t)
@@ -29,7 +31,7 @@ func TestService_PlaceBid(t *testing.T) {
 
 	t.Run("repository error", func(t *testing.T) {
 		m := new(repoBid.MockRepo)
-
+		n := new(lots.MockRepo)
 		m.On("PlaceBid",
 			mock.Anything,
 			int64(1),
@@ -37,7 +39,7 @@ func TestService_PlaceBid(t *testing.T) {
 			100.0,
 		).Return(errors.New("db error"))
 
-		svc := NewService(m)
+		svc := NewService(m, n)
 		err := svc.PlaceBid(context.Background(), 1, 2, 100)
 		require.ErrorContains(t, err, "place bid")
 		m.AssertExpectations(t)
