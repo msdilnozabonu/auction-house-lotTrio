@@ -24,8 +24,9 @@ const (
 	selectByIDForBid = `SELECT id, title, description, category, start_price, current_price, 
        COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1 
        AND status = 'live'`
-	selectAll = `SELECT id, seller_id, title, description, category, start_price, current_price, 
-       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE status = 'live' 
+	selectAll = `SELECT id, seller_id, title, coalesce(description,''), category, start_price, current_price, 
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, coalesce(photo_path, '') 
+		FROM lots WHERE status = 'live' 
       	AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
       	AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3)
       	AND ($4 = 0 OR current_price <= $4) ORDER BY id LIMIT $5 OFFSET $6`
