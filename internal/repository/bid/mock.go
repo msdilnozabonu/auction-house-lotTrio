@@ -22,3 +22,5 @@ func (m *MockRepo) GetBidderBids(ctx context.Context, bidderID int64) ([]model.B
 	bids, _ := args.Get(0).([]model.Bid)
 	return bids, args.Error(1)
 }
+
+var _ Repo = (*MockRepo)(nil)
