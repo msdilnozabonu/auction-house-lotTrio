@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
@@ -315,16 +316,16 @@ func TestHandler_Moderate_RejectWithReason(t *testing.T) {
 
 func TestHandler_Moderate_InvalidId(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	 m := new(lots.Mock)
-	 h := NewHandler(m)
-	 body := `{"approve":true, "reason":""}`
-	 w := httptest.NewRecorder()
-	 c, _ := gin.CreateTestContext(w)
-	 c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/invalid/moderate", strings.NewReader(body))
-	 c.Request.Header.Set("Content-Type", "application/json")
-	 c.Params = gin.Params{{Key: "id", Value: "invalid"}}
-	 h.Moderate(c)
-	 require.Equal(t, http.StatusBadRequest, w.Code)
+	m := new(lots.Mock)
+	h := NewHandler(m)
+	body := `{"approve":true, "reason":""}`
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/admin/lots/invalid/moderate", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "invalid"}}
+	h.Moderate(c)
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandler_Moderate_BadRequest(t *testing.T) {
@@ -387,5 +388,167 @@ func TestHandler_GetPlatformStats_InternalError(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodGet, "/admin/stats", nil)
 	h.GetPlatformStats(c)
 	require.Equal(t, http.StatusInternalServerError, w.Code)
+	m.AssertExpectations(t)
+}
+
+func TestHandler_ExportLots_JSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?format=json", nil)
+
+	m := new(lots.Mock)
+	expected := []model.LotsExport{
+		{ID: 1, Title: "Lot A", Category: "Cars", Status: "live", SellerID: 10, Price: 1000.50, EndsAt: time.Now()},
+	}
+	m.On("ExportLots", mock.Anything, mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "attachment; filename=lots_export.json", w.Header().Get("Content-Disposition"))
+	require.Contains(t, w.Body.String(), "Lot A")
+
+	m.AssertExpectations(t)
+}
+
+func TestHandler_ExportLots_CSV(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?format=csv", nil)
+
+	m := new(lots.Mock)
+	expected := []model.LotsExport{
+		{ID: 1, Title: "Lot A", Category: "Cars", Status: "live", SellerID: 10, Price: 1000.50, EndsAt: time.Now()},
+	}
+	m.On("ExportLots", mock.Anything, mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "attachment; filename=lots_export.csv", w.Header().Get("Content-Disposition"))
+	require.Contains(t, w.Body.String(), "Lot A")
+
+	m.AssertExpectations(t)
+}
+
+func TestHandler_ExportLots_DefaultJSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export", nil)
+
+	m := new(lots.Mock)
+	expected := []model.LotsExport{{ID: 1, Title: "Lot A"}}
+	m.On("ExportLots", mock.Anything, mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "attachment; filename=lots_export.json", w.Header().Get("Content-Disposition"))
+	require.Contains(t, w.Body.String(), "Lot A")
+}
+
+func TestHandler_ExportLots_InvalidFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?format=incorrect", nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Contains(t, w.Body.String(), "invalid format")
+}
+
+func TestHandler_ExportLots_InvalidDateFrom(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?date_from=bad-date", nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Contains(t, w.Body.String(), "invalid date_from")
+}
+func TestHandler_ExportLots_InvalidDateTo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?date_to=bad-date", nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Contains(t, w.Body.String(), "invalid date_to")
+}
+
+func TestHandler_ExportLots_ServiceError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export", nil)
+
+	m := new(lots.Mock)
+	m.On("ExportLots", mock.Anything, mock.Anything, mock.Anything).
+		Return([]model.LotsExport{}, errors.New("db error"))
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	require.Contains(t, w.Body.String(), "internal server error")
+}
+
+func TestHandler_ExportLots_ValidDateFrom(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?date_from=2026-07-01", nil)
+
+	m := new(lots.Mock)
+	expected := []model.LotsExport{{ID: 1, Title: "Lot A"}}
+	m.On("ExportLots", mock.Anything, mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Contains(t, w.Body.String(), "Lot A")
+	m.AssertExpectations(t)
+}
+
+func TestHandler_ExportLots_ValidDateTo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/export?date_to=2026-07-28", nil)
+
+	m := new(lots.Mock)
+	expected := []model.LotsExport{{ID: 2, Title: "Lot B"}}
+	m.On("ExportLots", mock.Anything, mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	h := NewHandler(m)
+	h.ExportLots(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Contains(t, w.Body.String(), "Lot B")
 	m.AssertExpectations(t)
 }
