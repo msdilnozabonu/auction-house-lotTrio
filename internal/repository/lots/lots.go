@@ -42,6 +42,8 @@ const (
 		FROM lots WHERE status = 'closed' AND current_winner_id IS NOT NULL`
 	topCategories = `SELECT category, COUNT(*), COALESCE(SUM(current_price), 0) FROM lots WHERE status = 'closed'
 		AND current_winner_id IS NOT NULL GROUP BY category ORDER BY SUM(current_price) DESC LIMIT 5`
+lotExport = `SELECT id, title, category, status, seller_id, current_price, ends_at 
+	FROM lots WHERE %s BETWEEN $1 AND $2 ORDER BY id`
 	selectMine = `Select id, seller_id, title, description,category, start_price, current_price,
        COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE seller_id = $1 
       	AND ($2 = '' OR title ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
@@ -65,6 +67,8 @@ type Repo interface {
 	GetPhoto(ctx context.Context, id int64) (string, error)
 	ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error)
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
+	ExportLots(ctx context.Context, dateField string, dateFrom, dateTo time.Time) (
+		[]model.LotsExport, error)
 	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
@@ -370,6 +374,27 @@ func (r *repo) GetPlatformStats(ctx context.Context) (model.PlatformStats, error
 	return stats, nil
 }
 
+func (r *repo) ExportLots(ctx context.Context, dateField string, dateFrom, dateTo time.Time) (
+	[]model.LotsExport, error) {
+	query := fmt.Sprintf(lotExport, dateField)
+	rows, err := r.repo.Query(ctx, query, dateFrom, dateTo)
+	if err != nil {
+		return nil, fmt.Errorf("export lots: %w", err)
+	}
+	defer rows.Close()
+	var result []model.LotsExport
+	for rows.Next() {
+		var l model.LotsExport
+		if err := rows.Scan(&l.ID, &l.Title, &l.Category, &l.Status, &l.SellerID, &l.Price, &l.EndsAt); err != nil {
+			return nil, fmt.Errorf("scan lots export: %w", err)
+		}
+		result = append(result, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("export lots: %w", err)
+	}
+	return result, nil
+}
 
 func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
 	limit := filter.Limit

@@ -37,3 +37,5 @@ coverage
 
 uploads/
 
+lots_export.csv
+lots_export.json

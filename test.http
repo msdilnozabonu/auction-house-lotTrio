@@ -174,6 +174,8 @@ Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 ###
+GET http://localhost:9999/api/v1/admin/export?format=json&date_from=2026-07-01
+Authorization: Bearer {{accessToken}}
 GET http://localhost:9999/api/v1/lots/19/bids
 Content-Type:   application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMTY2NTUsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.X23uAC2XyQqBs0MtL0YupxBqjJMl4YvmjsVhQLG4HIM
