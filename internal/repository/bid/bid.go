@@ -19,11 +19,11 @@ const (
 	insertBid = `INSERT INTO bids (lot_id, bidder_id, amount)
         VALUES ($1, $2, $3)`
 	getBidderBids = `SELECT b.lot_id, l.title, b.amount, b.created_at FROM bids b
-		JOIN lots l ON l.id = b.lot_id WHERE b.bidder_id = $1 ORDER BY b.created_at DESC`
+		JOIN lots l ON l.id = b.lot_id WHERE b.bidder_id = $1 ORDER BY b.created_at DESC, b.id DESC`
 	getBidsBylotIDForSeller = `Select b.lot_id, l.title, b.bidder_id, b.amount, b.created_at FROM bids b 
-    join lots l on l.id = b.lot_id where b.lot_id = $1`
+    join lots l on l.id = b.lot_id where b.lot_id = $1 ORDER BY b.created_at DESC, b.id DESC`
 	getBidsByLotIDForBidder = `SELECT b.lot_id, l.title, b.bidder_id, b.amount, b.created_at FROM bids b 
-        JOIN lots l ON l.id = b.lot_id WHERE b.lot_id = $1 ORDER BY b.created_at DESC LIMIT $2 OFFSET $3`
+        JOIN lots l ON l.id = b.lot_id WHERE b.lot_id = $1 ORDER BY b.created_at DESC, b.id DESC LIMIT $2 OFFSET $3`
 )
 
 type Repo interface {
