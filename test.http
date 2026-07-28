@@ -3,9 +3,9 @@ POST http://localhost:9999/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "login": "Maftuna9",
+  "login": "Maftuna",
   "password":"adminadmin",
-  "role": "admin"
+  "role": "bidder"
 }
 
 ###
@@ -13,9 +13,9 @@ POST http://localhost:9999/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "login": "Maftuna9",
+  "login": "Maftuna",
   "password":"adminadmin",
-  "role": "admin"
+  "role": "bidder"
 }
 
 
@@ -172,3 +172,17 @@ Authorization: Bearer {{accessToken}}
 GET http://localhost:9999/api/v1/admin/stats
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+
+###
+GET http://localhost:9999/api/v1/lots/19/bids
+Content-Type:   application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMTY2NTUsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.X23uAC2XyQqBs0MtL0YupxBqjJMl4YvmjsVhQLG4HIM
+
+###
+POST http://localhost:9999/api/v1/lots/19/bid
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMTcxNDgsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.EkSelIudphfrK62OiHOYjoJALWTXDxogP5KPbTGxMvs
+
+{
+  "amount": 20000
+}

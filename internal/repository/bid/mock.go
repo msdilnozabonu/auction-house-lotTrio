@@ -12,6 +12,11 @@ type MockRepo struct {
 	mock.Mock
 }
 
+func (m *MockRepo) GetBidsByLotID(ctx context.Context, lotID int64) ([]model.Bid, error) {
+	args := m.Called(ctx, lotID)
+	return args.Get(0).([]model.Bid), args.Error(1)
+}
+
 func (m *MockRepo) PlaceBid(ctx context.Context, lotID, bidderID int64, amount float64) error {
 	args := m.Called(ctx, lotID, bidderID, amount)
 	return args.Error(0)
