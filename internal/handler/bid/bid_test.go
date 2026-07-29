@@ -28,9 +28,9 @@ func TestHandler_PlaceBid(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		c.Request = req
 		c.Params = gin.Params{{Key: "id", Value: "1"}}
-		c.Set("user_id", int64(42))
+		c.Set("user_id", int64(56))
 
-		m.On("PlaceBid", mock.Anything, int64(1), int64(42), float64(100)).Return(nil)
+		m.On("PlaceBid", mock.Anything, int64(1), int64(56), float64(100)).Return(nil)
 
 		h.PlaceBid(c)
 
@@ -39,7 +39,7 @@ func TestHandler_PlaceBid(t *testing.T) {
 	})
 	t.Run("service error", func(t *testing.T) {
 		m := new(bid.MockService)
-		h :=NewHandler(m)
+		h := NewHandler(m)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
@@ -56,6 +56,21 @@ func TestHandler_PlaceBid(t *testing.T) {
 
 		require.Equal(t, http.StatusInternalServerError, w.Code)
 		require.Contains(t, w.Body.String(), "db error")
+	})
+	t.Run("invalid lot id", func(t *testing.T) {
+		m := new(bid.MockService)
+		h := NewHandler(m)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		body := `{"amount":100}`
+		req := httptest.NewRequest(http.MethodPost, "/lots/1000/bid", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: "afsj"}}
+		c.Set("user_id", int64(23))
+		h.PlaceBid(c)
+		require.Equal(t, http.StatusBadRequest, w.Code)
+		require.Contains(t, w.Body.String(), "invalid id")
 	})
 }
 
@@ -173,5 +188,30 @@ func TestHandler_GetBidsByLotID(t *testing.T) {
 		require.Equal(t, http.StatusInternalServerError, w.Code)
 		require.Contains(t, w.Body.String(), "db error")
 		m.AssertExpectations(t)
+	})
+	t.Run("unauthorized seller", func(t *testing.T) {
+		m := new(bid.MockService)
+		h := NewHandler(m)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		req := httptest.NewRequest(http.MethodGet, "/lots/1/bids", nil)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: "1"}}
+		c.Set("role", "seller")
+		h.GetBidsByLotID(c)
+
+		require.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+	t.Run("default role forbidden", func(t *testing.T) {
+		m := new(bid.MockService)
+		h := NewHandler(m)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		req := httptest.NewRequest(http.MethodGet, "/lots/1/bids", nil)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: "1"}}
+		c.Set("role", "viewer")
+		h.GetBidsByLotID(c)
+		require.Equal(t, http.StatusForbidden, w.Code)
 	})
 }
