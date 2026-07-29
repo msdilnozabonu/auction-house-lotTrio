@@ -99,9 +99,10 @@ func (h *handler) CreateLot(c *gin.Context) {
 
 	var req lotsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.RespondError(c, err)
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid request"})
 		return
 	}
+
 	err := h.lotsService.CreateLot(c.Request.Context(), req.Title, req.Description, req.Category, req.StartPrice,
 		req.Photo, req.EndsAt, req.Status, sellerId)
 	if err != nil {
@@ -627,6 +628,10 @@ func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
 		})
 	}
 	w.Flush()
+}
+
+func (h *handler) CancelLot(c *gin.Context)  {
+
 }
 
 func parseID(c *gin.Context) (int64, int64, error) {
