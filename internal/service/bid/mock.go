@@ -12,6 +12,18 @@ type MockService struct {
 	mock.Mock
 }
 
+func (m *MockService) GetBidsByLotIDForSeller(ctx context.Context, lotID, sellerID int64) ([]model.Bid, error) {
+	args := m.Called(ctx, lotID, sellerID)
+	bids, _ := args.Get(0).([]model.Bid)
+	 return bids, args.Error(1)
+}
+
+func (m *MockService) GetBidsByLotIDForBidder(ctx context.Context, lotID int64, page, limit int) ([]model.Bid, error) {
+	args := m.Called(ctx, lotID, page, limit)
+	 bids, _ := args.Get(0).([]model.Bid)
+	 return bids, args.Error(1)
+}
+
 func (m *MockService) PlaceBid(ctx context.Context, lotID, bidderID int64, amount float64) error {
 	args := m.Called(ctx, lotID, bidderID, amount)
 	return args.Error(0)
