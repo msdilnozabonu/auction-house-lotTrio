@@ -12,7 +12,7 @@ type MockRepo struct {
 	mock.Mock
 }
 
-func (m *MockRepo) GetBidsByLotID(ctx context.Context, lotID int64) ([]model.Bid, error) {
+func (m *MockRepo) GetBidsByLotIDForSeller(ctx context.Context, lotID int64) ([]model.Bid, error) {
 	args := m.Called(ctx, lotID)
 	return args.Get(0).([]model.Bid), args.Error(1)
 }
@@ -24,6 +24,12 @@ func (m *MockRepo) PlaceBid(ctx context.Context, lotID, bidderID int64, amount f
 
 func (m *MockRepo) GetBidderBids(ctx context.Context, bidderID int64) ([]model.Bid, error) {
 	args := m.Called(ctx, bidderID)
+	bids, _ := args.Get(0).([]model.Bid)
+	return bids, args.Error(1)
+}
+
+func (m *MockRepo) GetBidsByLotIDForBidder(ctx context.Context, filter model.BidFilter) ([]model.Bid, error) {
+	args := m.Called(ctx, filter)
 	bids, _ := args.Get(0).([]model.Bid)
 	return bids, args.Error(1)
 }

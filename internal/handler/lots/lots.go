@@ -168,10 +168,14 @@ func (h *handler) GetByID(c *gin.Context) {
 
 	role := c.GetString("role")
 	var lot *model.Lots
-	if role == "bidder" {
+	switch role {
+	case "bidder":
 		lot, err = h.lotsService.GetByIDForBid(c.Request.Context(), model.Lots{ID: lotID})
-	} else {
+	case "seller":
 		lot, err = h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	default:
+		response.RespondError(c, model.ErrForbidden)
+		return
 	}
 	if err != nil {
 		h.logger.Error("get lot by id", "err", err)
@@ -179,7 +183,7 @@ func (h *handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, lot)
+	response.RespondJSON(c, http.StatusOK, lot)
 }
 
 // UpdateByID  godoc
