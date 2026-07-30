@@ -341,7 +341,7 @@ func (s *service) CancelLot(ctx context.Context, id int64, reason string) error 
 	return nil
 }
 
-func (s *service) ReportLot(ctx context.Context, lotId, reporterId int64, reason string) error{
+func (s *service) ReportLot(ctx context.Context, lotId, reporterId int64, reason string) error {
 	if reason == "" {
 		return errors.New("reason is required")
 	}

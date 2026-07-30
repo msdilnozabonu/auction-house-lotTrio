@@ -57,5 +57,5 @@ func (h *handler) Me(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	response.RespondJSON(c, http.StatusOK, user)
 }
