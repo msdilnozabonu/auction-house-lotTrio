@@ -2,12 +2,29 @@
 
 [![Lint](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/lint.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/lint.yml)
 [![Nilaway](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/nilaway.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/nilaway.yml)
-[![Coverage](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/coverage.svg)](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/coverage.svg)
+[![Coverage](https://raw.githubusercontent.com/msdilnozabonu/auction-house-lotTrio/badges/coverage.svg)](https://github.com/msdilnozabonu/auction-house-lotTrio/tree/badges)
+[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 
 ## Описание
-**AuctionHouse** — backend-платформа онлайн-аукциона на Go, построенная на основе Layered Architecture. 
-Включает JWT-аутентификацию, ролевую модель доступа, управление лотами, систему ставок, автоматическое 
-закрытие аукционов, PostgreSQL, Docker и REST API.
+**AuctionHouse** — backend-платформа онлайн-аукциона на Go, построенная на основе Layered Architecture.
+Включает JWT-аутентификацию, ролевую модель доступа, управление лотами, систему ставок, модерацию, аналитику, автоматическое
+закрытие аукционов, экспорт отчётов, PostgreSQL, Docker и REST API.
+
+---
+## Содержание
+
+- [Ключевые особенности](#ключевые-особенности)
+- [Архитектура](#архитектура)
+- [Установка и запуск](#-установка-и-запуск)
+- [Переменные окружения](#-переменные-окружения)
+- [Миграции](#миграции)
+- [Swagger](#-swagger)
+- [Роли и возможности](#-роли-и-возможности)
+- [Проверка проекта](#-проверка-проекта)
+- [Полезные команды](#полезные-команды)
+- [Стек технологий](#стек-технологий)
+- [Команда](#команда)
+---
 
 
 ## Ключевые особенности
@@ -18,9 +35,22 @@
 - **Управление лотами** - Создание, редактирование и управление аукционными лотами
 - **Система ставок** - Полнофункциональная система ставок с валидацией
 - **Автоматическое закрытие аукционов** - Автоматизированное управление сроками
+- **Аналитика** — агрегаты по продажам продавца и по площадке в целом
+- **Загрузка фото лота** (multipart), watchlist, история ставок, экспорт отчётов
+- **Единый формат ошибок и ответов**, structured logging (`slog`), graceful shutdown
 - **Swagger API**
 - **Docker**
 - **Middleware (логирование, RequestID, авторизация)**
+
+
+## Архитектура
+
+Однонаправленный поток зависимостей — только вниз, через интерфейсы:
+
+```
+handler  →  service  →  repository  →  PostgreSQL
+```
+
 
 ## 📦 Установка и запуск
 
@@ -37,11 +67,13 @@ cd auction-house-lotTrio
 docker compose up --build
 ```
 
-или локально
+### Локальный запуск
 
 ```bash
 go run ./cmd/server
 ```
+
+Поднимаются `app` + `postgres`. Проверка: `GET /health` → 200.
 
 ---
 
@@ -56,7 +88,7 @@ PORT=9999
 
 DB_DSN=postgres://app:pass@localhost:5445/auction_house
 
-JWT_SECRET=your_secret_key
+JWT_SECRET=super-secret-key
 ```
 
 ---
@@ -81,6 +113,16 @@ http://localhost:9999/api/v1/swagger/index.html
 
 ---
 
+## 👥 Роли и возможности
+
+| Роль | Ключевые эндпоинты |
+|------|---------------------|
+| 🙋 **Участник (bidder)** | каталог лотов с фильтрами/поиском, ставка (`POST /lots/:id/bid`), мои ставки и выигрыши, watchlist, история ставок по лоту |
+| 📦 **Продавец (seller)** | CRUD лотов, статусы `draft/live/closed`, загрузка фото, свои лоты и ставки по ним, аналитика продаж, отмена лота без ставок |
+| ⚙️ **Платформа (admin)** | панель всех лотов, модерация (approve/reject), авто- и ручное закрытие лотов (`POST /admin/close-expired`), аналитика площадки, экспорт отчётов, разбор жалоб |
+
+---
+
 ## 🧪 Проверка проекта
 
 Линтер
@@ -92,13 +134,19 @@ golangci-lint run
 Тесты
 
 ```bash
-go test ./...
+go test -tags=integration ./...
 ```
 
 Покрытие
 
 ```bash
-go test ./... -cover
+go test -tags=integration ./... -cover
+```
+
+Race
+
+```bash
+go test -race ./...
 ```
 
 Nilaway
@@ -129,3 +177,13 @@ make check     # выполнить все проверки
 - **Swagger** - Документация API
 - **GitHub Actions** - CI/CD
 - **Layered Architecture** - Архитектурный паттерн
+
+
+## Команда
+
+Проект разработан командой из трёх участников.
+Ответственность была разделена по функциональным областям:
+
+- Участник (Bidder)
+- Продавец (Seller)
+- Платформа (Admin)
