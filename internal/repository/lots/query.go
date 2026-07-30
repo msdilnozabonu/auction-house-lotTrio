@@ -5,7 +5,7 @@ const (
 	closeLot   = `UPDATE lots 
 	SET status = 'closed',
 	    current_winner_id = (SELECT bidder_id FROM bids WHERE lot_id = $1
-		ORDER BY amount DESC, created_at ASC LIMIT 1)
+		ORDER BY amount DESC, created_at DESC LIMIT 1)
 	WHERE id = $1 AND status = 'live'`
 	selectByID = `SELECT id, title, description, category, start_price, current_price, COALESCE(current_winner_id, 0), 
        status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1`
@@ -40,7 +40,7 @@ const (
       	AND ($5 = 0 OR current_price <= $5) ORDER BY id LIMIT $6 OFFSET $7`
 	cancelLot = `UPDATE lots SET status = 'cancelled', cancellation_reason = $1
             WHERE id = $2 AND status IN('draft', 'live')`
-	createReport= `INSERT INTO reports (lot_id, reporter_id, reason)
+	createReport = `INSERT INTO reports (lot_id, reporter_id, reason)
 				VALUES ($1, $2, $3)`
 	getListOfReports = `SELECT id, lot_id, reporter_id, reason, created_at 
 		FROM reports WHERE status = 'pending' ORDER BY created_at`
