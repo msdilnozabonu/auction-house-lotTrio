@@ -127,7 +127,7 @@ func TestRotateSessionToken_NotFound(t *testing.T) {
 	defer pool.Close()
 
 	repo := New(pool)
-	err := repo.RotateSessionToken(ctx, 999999,"token", time.Now())
+	err := repo.RotateSessionToken(ctx, 999999, "token", time.Now())
 	require.ErrorIs(t, err, model.ErrSessionNotFound)
 }
 

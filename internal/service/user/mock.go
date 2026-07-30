@@ -14,7 +14,7 @@ type MockService struct {
 
 func (m *MockService) Me(ctx context.Context, userID int64) (model.User, error) {
 	args := m.Called(ctx, userID)
-	 return args.Get(0).(model.User), args.Error(1)
+	return args.Get(0).(model.User), args.Error(1)
 }
 
 var _ Service = (*MockService)(nil)

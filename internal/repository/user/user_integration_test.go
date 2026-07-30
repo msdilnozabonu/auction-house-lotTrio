@@ -1,4 +1,5 @@
 //go:build integration
+
 package user
 
 import (
@@ -143,4 +144,3 @@ func TestGetByID_NotFound(t *testing.T) {
 	_, err = repo.GetByID(ctx, -1)
 	require.ErrorIs(t, err, model.ErrUserNotFound)
 }
-

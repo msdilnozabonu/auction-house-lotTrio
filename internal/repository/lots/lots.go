@@ -404,22 +404,22 @@ func (r *repo) CancelLot(ctx context.Context, id int64, reason string) (bool, er
 	return true, nil
 }
 
-func (r *repo) CreateReport(ctx context.Context, lotId, reporterId int64, reason string) error{
+func (r *repo) CreateReport(ctx context.Context, lotId, reporterId int64, reason string) error {
 	_, err := r.repo.Exec(ctx, createReport, lotId, reporterId, reason)
-		if err != nil {
-			return fmt.Errorf("create report: %w", err)
-		}
-		return nil
+	if err != nil {
+		return fmt.Errorf("create report: %w", err)
+	}
+	return nil
 }
 
-func (r *repo) GetListOfReports(ctx context.Context) ([]model.ReportLot, error){
+func (r *repo) GetListOfReports(ctx context.Context) ([]model.ReportLot, error) {
 	rows, err := r.repo.Query(ctx, getListOfReports)
 	if err != nil {
 		return nil, fmt.Errorf("get list of reports: %w", err)
 	}
 	defer rows.Close()
 	var result []model.ReportLot
-	for rows.Next(){
+	for rows.Next() {
 		var rep model.ReportLot
 		if err := rows.Scan(&rep.ID, &rep.LotID,
 			&rep.ReporterID, &rep.Reason, &rep.CreatedAt); err != nil {

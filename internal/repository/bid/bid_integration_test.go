@@ -1,4 +1,5 @@
 //go:build integration
+
 package bid
 
 import (
@@ -187,7 +188,7 @@ func TestGetBidsByLotIDForSeller_Integration(t *testing.T) {
 	var lotID int64
 	err = pool.QueryRow(ctx,
 		`INSERT INTO lots (title, start_price, current_price, status, seller_id)
-		VALUES ($1,$2,$2,'live',$3) RETURNING id`,"Seller Lot", 100.0, sellerID).Scan(&lotID)
+		VALUES ($1,$2,$2,'live',$3) RETURNING id`, "Seller Lot", 100.0, sellerID).Scan(&lotID)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
