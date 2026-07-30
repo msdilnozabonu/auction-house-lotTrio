@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"auction-house-lotTrio/internal/response"
 	"auction-house-lotTrio/internal/service/lots"
+	"encoding/csv"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -28,6 +29,7 @@ type Handler interface {
 	GetPhoto(c *gin.Context)
 	Moderate(c *gin.Context)
 	GetPlatformStats(c *gin.Context)
+	ExportLots(c *gin.Context)
 	GetMine(c *gin.Context)
 }
 
@@ -67,6 +69,8 @@ const (
 	messageKey    = "message"
 	errorMsg      = "error"
 	pageSizeLimit = 20
+	internalErrorMsg = "internal server error"
+	jsonFormat = "json"
 )
 
 // CreateLot     godoc
@@ -95,9 +99,10 @@ func (h *handler) CreateLot(c *gin.Context) {
 
 	var req lotsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.RespondError(c, err)
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid request"})
 		return
 	}
+
 	err := h.lotsService.CreateLot(c.Request.Context(), req.Title, req.Description, req.Category, req.StartPrice,
 		req.Photo, req.EndsAt, req.Status, sellerId)
 	if err != nil {
@@ -163,10 +168,14 @@ func (h *handler) GetByID(c *gin.Context) {
 
 	role := c.GetString("role")
 	var lot *model.Lots
-	if role == "bidder" {
+	switch role {
+	case "bidder":
 		lot, err = h.lotsService.GetByIDForBid(c.Request.Context(), model.Lots{ID: lotID})
-	} else {
+	case "seller":
 		lot, err = h.lotsService.GetByID(c.Request.Context(), model.Lots{ID: lotID})
+	default:
+		response.RespondError(c, model.ErrForbidden)
+		return
 	}
 	if err != nil {
 		h.logger.Error("get lot by id", "err", err)
@@ -174,7 +183,7 @@ func (h *handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, lot)
+	response.RespondJSON(c, http.StatusOK, lot)
 }
 
 // UpdateByID  godoc
@@ -369,7 +378,7 @@ func (h *handler) GetLotsForAdmin(c *gin.Context) { //nolint:cyclop
 	items, total, err := h.lotsService.FindLotsForAdmin(c.Request.Context(), filter)
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: internalErrorMsg})
 		return
 	}
 	totalPages := (total + filter.Limit - 1) / filter.Limit
@@ -549,9 +558,84 @@ func (h *handler) GetPlatformStats(c *gin.Context) {
 	stats, err := h.lotsService.GetPlatformStats(c.Request.Context())
 	if err != nil {
 		h.logger.Error("get lots repository", "err", err)
-		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: "internal server error"})
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: internalErrorMsg})
 	}
 	response.RespondJSON(c, http.StatusOK, stats)
+}
+
+// ExportLots godoc
+// @Summary      Экспорт отчёта по лотам
+// @Description  Выгружает лоты за период в формате CSV или JSON
+// @Tags         admin
+// @Produce      json,text/csv
+// @Security     BearerAuth
+// @Param        format     query  string  false  "Формат: json или csv (по умолчанию json)"
+// @Param        date_from  query  string  false  "Начало периода (YYYY-MM-DD)"
+// @Param        date_to    query  string  false  "Конец периода (YYYY-MM-DD)"
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Router       /admin/export [get]
+func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
+	format := c.Query("format")
+	if format == "" {
+		format = jsonFormat
+	}
+	if format != jsonFormat && format != "csv" {
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid format"})
+		return
+	}
+	from := time.Now().AddDate(0, 0, -30)
+	if dateFrom := c.Query("date_from"); dateFrom != "" {
+		dateFromP, err := time.Parse(time.DateOnly, dateFrom)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date_from"})
+			return
+		}
+		from = dateFromP
+	}
+	to := time.Now()
+	if dateTo := c.Query("date_to"); dateTo != "" {
+		dateToP, err := time.Parse(time.DateOnly, dateTo)
+		if err != nil {
+			h.logger.Error("get lots repository", "err", err)
+			response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid date_to"})
+			return
+		}
+		to = dateToP
+	}
+	l, err := h.lotsService.ExportLots(c.Request.Context(), from, to)
+	if err != nil {
+		h.logger.Error("export lots repository", "err", err)
+		response.RespondJSON(c, http.StatusInternalServerError, gin.H{errorMsg: internalErrorMsg})
+		return
+	}
+	if format == jsonFormat {
+		c.Header("Content-Disposition", "attachment; filename=lots_export.json")
+		response.RespondJSON(c, http.StatusOK, l)
+		return
+	}
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", "attachment; filename=lots_export.csv")
+	w := csv.NewWriter(c.Writer)
+	_ = w.Write([]string{"id", "title", "category", "status", "seller_id", "current_price", "ends_at"})
+	for _, r := range l {
+		_ = w.Write([]string{
+			strconv.FormatInt(r.ID, 10),
+			r.Title,
+			r.Category,
+			r.Status,
+			strconv.FormatInt(r.SellerID, 10),
+			strconv.FormatFloat(r.Price, 'f', 2, 64),
+			r.EndsAt.Format(time.RFC3339),
+		})
+	}
+	w.Flush()
+}
+
+func (h *handler) CancelLot(c *gin.Context)  {
+
 }
 
 func parseID(c *gin.Context) (int64, int64, error) {

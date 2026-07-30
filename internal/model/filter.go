@@ -15,3 +15,9 @@ type LotsFilter struct {
 	DateFrom *time.Time
 	DateTo   *time.Time
 }
+
+type BidFilter struct {
+	LotID int64
+	Limit int
+	Offset int
+}

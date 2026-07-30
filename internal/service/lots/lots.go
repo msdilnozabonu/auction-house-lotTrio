@@ -26,6 +26,7 @@ type Service interface {
 	GetPhoto(ctx context.Context, id, sellerID int64) (string, error)
 	ModerateALot(ctx context.Context, id int64, approve bool, reason string) error
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
+	ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error)
 	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
@@ -305,6 +306,14 @@ func (s *service) GetPlatformStats(ctx context.Context) (model.PlatformStats, er
 	return stats, nil
 }
 
+func (s *service) ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error) {
+	rows, err := s.lotsRepo.ExportLots(ctx, "ends_at", from, to)
+	if err != nil {
+		s.logger.Error("export lots", "err", err)
+		return nil, fmt.Errorf("export lots: %w", err)
+	}
+	return rows, nil
+}
 func (s *service) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
 	items, total, err := s.lotsRepo.GetMineLots(ctx, sellerID, filter)
 	if err != nil {
@@ -313,3 +322,15 @@ func (s *service) GetMineLots(ctx context.Context, sellerID int64, filter model.
 	}
 	return items, total, nil
 }
+//
+// func (s *service) CancelLot(ctx context.Context, id int64, report *model.ReportLot) (bool, error) {
+//	lot, err := s.lotsRepo.CancelLot(ctx, id)
+//	if err != nil {
+//		s.logger.Error("cancel lot", "err", err)
+//		return false, fmt.Errorf("cancel lot: %w", err)
+//	}
+//	if !lot {
+//		return false, nil
+//	}
+//	return true, nil
+// }

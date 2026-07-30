@@ -22,7 +22,9 @@ func RespondError(c *gin.Context, err error) {
 		errors.Is(err, model.ErrLenPass),
 		errors.Is(err, model.ErrStatusNotChanged),
 		errors.Is(err, model.ErrInvalidFileType),
-		errors.Is(err, model.ErrFileTooLarge):
+		errors.Is(err, model.ErrFileTooLarge),
+		errors.Is(err, model.ErrBidTooLow),
+		errors.Is(err, model.ErrLotNotLive):
 		RespondJSON(c, http.StatusBadRequest, gin.H{errorKey: err.Error()})
 	// 401 Unauthorized
 	case errors.Is(err, model.ErrInvalidToken),
@@ -48,6 +50,8 @@ func RespondError(c *gin.Context, err error) {
 	case errors.Is(err, model.ErrInvalidID),
 		errors.Is(err, model.ErrUserIDNotFound),
 		errors.Is(err, model.ErrInvalidUserType):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, model.ErrStartPrice):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	// 500 Internal Server Error
 	default:

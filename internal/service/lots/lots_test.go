@@ -649,7 +649,7 @@ func TestService_GetPlatformStats(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		m := new(lots.MockRepo)
 		m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, nil)
-		svc:=NewService(m)
+		svc := NewService(m)
 		_, err := svc.GetPlatformStats(t.Context())
 		require.NoError(t, err)
 		m.AssertExpectations(t)
@@ -659,6 +659,31 @@ func TestService_GetPlatformStats(t *testing.T) {
 		m.On("GetPlatformStats", mock.Anything).Return(model.PlatformStats{}, errors.New("db error"))
 		svc := NewService(m)
 		_, err := svc.GetPlatformStats(t.Context())
+		require.ErrorContains(t, err, "db error")
+		m.AssertExpectations(t)
+	})
+}
+
+func TestService_ExportLots_Success(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		expected := []model.LotsExport{
+			{ID: 1, Title: "Lot A", Category: "Cars", Status: "live", SellerID: 10, Price: 1000, EndsAt: time.Now()},
+		}
+		m.On("ExportLots", mock.Anything, "ends_at", mock.Anything, mock.Anything).
+			Return(expected, nil)
+		svc := NewService(m)
+		rows, err := svc.ExportLots(t.Context(), time.Now().AddDate(0, 0, -1), time.Now())
+		require.NoError(t, err)
+		require.Equal(t, expected, rows)
+		m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("ExportLots", mock.Anything, "ends_at", mock.Anything, mock.Anything).
+			Return([]model.LotsExport{}, errors.New("db error"))
+		svc := NewService(m)
+		_, err := svc.ExportLots(t.Context(), time.Now().AddDate(0, 0, -1), time.Now())
 		require.ErrorContains(t, err, "db error")
 		m.AssertExpectations(t)
 	})

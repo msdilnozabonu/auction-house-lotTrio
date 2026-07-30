@@ -24,16 +24,17 @@ const (
 	selectByIDForBid = `SELECT id, title, description, category, start_price, current_price, 
        COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path, seller_id FROM lots WHERE id = $1 
        AND status = 'live'`
-	selectAll = `SELECT id, seller_id, title, description, category, start_price, current_price, 
-       COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE status = 'live' 
+	selectAll = `SELECT id, seller_id, title, coalesce(description,''), category, start_price, current_price, 
+       COALESCE(current_winner_id, 0), status, starts_at, ends_at, coalesce(photo_path, '') 
+		FROM lots WHERE status = 'live' 
       	AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
       	AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3)
       	AND ($4 = 0 OR current_price <= $4) ORDER BY id LIMIT $5 OFFSET $6`
 	countAll = `SELECT COUNT(*) FROM lots WHERE status = 'live' 
         AND ($1 = '' OR title ILIKE '%'||$1||'%' OR description ILIKE '%'||$1||'%')
         AND ($2 = '' OR category = $2) AND ($3 = 0 OR current_price >= $3) AND ($4 = 0 OR current_price <= $4)`
-	baseQuery = `SELECT id, seller_id, title, description, start_price, current_price, current_winner_id, status, 
-       starts_at, ends_at, photo_path FROM lots WHERE 1=1`
+	baseQuery = `SELECT id, seller_id, title, coalesce(description, ''), start_price, current_price, 
+       coalesce(current_winner_id, 0), status, starts_at, ends_at, coalesce(photo_path, '') FROM lots WHERE 1=1`
 	baseCountQuery = `SELECT COUNT(*) FROM lots WHERE 1=1`
 	moderateLot    = `UPDATE lots SET moderation_status = $1, rejection_reason = $2 
             WHERE id = $3 AND moderation_status = 'pending'`
@@ -42,11 +43,14 @@ const (
 		FROM lots WHERE status = 'closed' AND current_winner_id IS NOT NULL`
 	topCategories = `SELECT category, COUNT(*), COALESCE(SUM(current_price), 0) FROM lots WHERE status = 'closed'
 		AND current_winner_id IS NOT NULL GROUP BY category ORDER BY SUM(current_price) DESC LIMIT 5`
+	lotExport = `SELECT id, title, category, status, seller_id, current_price, ends_at 
+	FROM lots WHERE %s BETWEEN $1 AND $2 ORDER BY id`
 	selectMine = `Select id, seller_id, title, description,category, start_price, current_price,
        COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE seller_id = $1 
       	AND ($2 = '' OR title ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
       	AND ($3 = '' OR category = $3) AND ($4 = 0 OR current_price >= $4)
       	AND ($5 = 0 OR current_price <= $5) ORDER BY id LIMIT $6 OFFSET $7`
+	cancelLot = `UPDATE lot SET status = 'cancelled' WHERE id = $1`
 )
 
 type Repo interface {
@@ -65,6 +69,8 @@ type Repo interface {
 	GetPhoto(ctx context.Context, id int64) (string, error)
 	ModerateLot(ctx context.Context, id int64, status string, reason string) (bool, error)
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
+	ExportLots(ctx context.Context, dateField string, dateFrom, dateTo time.Time) (
+		[]model.LotsExport, error)
 	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
 }
 
@@ -370,6 +376,27 @@ func (r *repo) GetPlatformStats(ctx context.Context) (model.PlatformStats, error
 	return stats, nil
 }
 
+func (r *repo) ExportLots(ctx context.Context, dateField string, dateFrom, dateTo time.Time) (
+	[]model.LotsExport, error) {
+	query := fmt.Sprintf(lotExport, dateField)
+	rows, err := r.repo.Query(ctx, query, dateFrom, dateTo)
+	if err != nil {
+		return nil, fmt.Errorf("export lots: %w", err)
+	}
+	defer rows.Close()
+	var result []model.LotsExport
+	for rows.Next() {
+		var l model.LotsExport
+		if err := rows.Scan(&l.ID, &l.Title, &l.Category, &l.Status, &l.SellerID, &l.Price, &l.EndsAt); err != nil {
+			return nil, fmt.Errorf("scan lots export: %w", err)
+		}
+		result = append(result, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("export lots: %w", err)
+	}
+	return result, nil
+}
 
 func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error) {
 	limit := filter.Limit
@@ -402,3 +429,12 @@ func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.Lot
 	}
 	return out, 0, nil
 }
+
+//
+// func (r *repo) CancelLot(ctx context.Context, id int64) (bool, error)  {
+//	row, err := r.repo.Exec(ctx, `UPDATE lots SET status = 'cancelled' WHERE id = $1`, id)
+//		if err != nil {
+//			return false, fmt.Errorf("cancel lot: %w", err)
+//		}
+//	return row.RowsAffected() > 0, nil
+//}
