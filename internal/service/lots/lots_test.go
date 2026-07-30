@@ -751,10 +751,10 @@ func TestService_GetListOfReports(t *testing.T) {
 		m.On("GetListOfReports", mock.Anything).
 			Return(expect, nil)
 		svc := NewService(m)
-			rows, err := svc.GetListOfReports(t.Context())
-			require.NoError(t, err)
-			require.Equal(t, expect, rows)
-			m.AssertExpectations(t)
+		rows, err := svc.GetListOfReports(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, expect, rows)
+		m.AssertExpectations(t)
 	})
 	t.Run("db error", func(t *testing.T) {
 		m := new(lots.MockRepo)

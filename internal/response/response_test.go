@@ -22,7 +22,7 @@ func TestRespondError_NotFound(t *testing.T) {
 	c, w := newContext()
 	RespondError(c, model.ErrNotFound)
 	require.Equal(t, http.StatusNotFound, w.Code)
-	require.JSONEq(t,`{"error":"`+model.ErrNotFound.Error()+`"}`, w.Body.String())
+	require.JSONEq(t, `{"error":"`+model.ErrNotFound.Error()+`"}`, w.Body.String())
 }
 
 func TestRespondError_BadRequest(t *testing.T) {
@@ -37,7 +37,7 @@ func TestRespondError_UserNotFound(t *testing.T) {
 	c, w := newContext()
 	RespondError(c, model.ErrUserNotFound)
 	require.Equal(t, http.StatusUnauthorized, w.Code)
-	require.JSONEq(t,`{"error":"invalid login or password"}`, w.Body.String())
+	require.JSONEq(t, `{"error":"invalid login or password"}`, w.Body.String())
 }
 
 func TestRespondError_Forbidden(t *testing.T) {

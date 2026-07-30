@@ -76,10 +76,10 @@ func main() {
 }
 
 func run() error {
-	if err := godotenv.Load(); err != nil {
-		slog.Warn(".env file not found", "err", err)
-	}
 	logger := newLogger()
+	if err := godotenv.Load(); err != nil {
+		logger.Warn(".env file not found", "err", err)
+	}
 	ctx := context.Background()
 	pool := newPool(ctx)
 
@@ -88,7 +88,7 @@ func run() error {
 
 	engine, err := buildRouter(ctx, sigCtx, pool, logger)
 	if err != nil {
-		slog.Error("create router", "err", err)
+		logger.Error("create router", "err", err)
 		return fmt.Errorf("create router: %w", err)
 	}
 
@@ -105,27 +105,27 @@ func run() error {
 	go func() {
 		if err := srv.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			slog.Error("listen", "err", err)
+			logger.Error("listen", "err", err)
 			os.Exit(1)
 		}
 	}()
 
-	slog.Info("server started", "port", port)
+	logger.Info("server started", "port", port)
 
 	<-sigCtx.Done()
-	slog.Info("shutdown signal received")
+	logger.Info("shutdown signal received")
 
 	shCtx, cancel := context.WithTimeout(context.Background(), shutdownTime*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(shCtx); err != nil {
-		slog.Error("shutdown", "err", err)
+		logger.Error("shutdown", "err", err)
 	} else {
-		slog.Info("server stopped")
+		logger.Info("server stopped")
 	}
 
 	pool.Close()
-	slog.Info("shutdown")
+	logger.Info("shutdown")
 	return nil
 }
 func newLogger() *slog.Logger {
