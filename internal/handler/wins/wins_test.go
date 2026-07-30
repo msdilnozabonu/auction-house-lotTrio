@@ -26,9 +26,9 @@ func TestHandler_GetWins(t *testing.T) {
 		c.Set("user_id", int64(1))
 		expected := []model.Win{
 			{LotID: 1,
-			LotTitle:   "Vintage Painting",
-			WinningBid: 2500.50,
-			ClosedAt:   time.Date(2026, 7, 29, 13, 45, 0, 0, time.UTC),
+				LotTitle:   "Vintage Painting",
+				WinningBid: 2500.50,
+				ClosedAt:   time.Date(2026, 7, 29, 13, 45, 0, 0, time.UTC),
 			},
 		}
 		m.On("GetWins", mock.Anything, int64(1)).

@@ -1,4 +1,5 @@
 //go:build integration
+
 package lots
 
 import (
@@ -36,7 +37,7 @@ func createSeller(t *testing.T, ctx context.Context, pool *pgxpool.Pool) int64 {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, _ = pool.Exec(ctx,`DELETE FROM users WHERE id=$1`, sellerID)
+		_, _ = pool.Exec(ctx, `DELETE FROM users WHERE id=$1`, sellerID)
 	})
 	return sellerID
 }
@@ -278,8 +279,8 @@ func TestFindLotsAdmin_Empty(t *testing.T) {
 
 	lots, total, err := repo.FindLotsAdmin(ctx, model.LotsFilter{
 		Search: "this_lot_should_never_exist_123456789",
-		Page:  1,
-		Limit: 10,
+		Page:   1,
+		Limit:  10,
 	})
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, total, 0)
@@ -498,7 +499,7 @@ func TestGetMineLots_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	var lotID int64
-	err = pool.QueryRow(ctx,`SELECT id FROM lots WHERE title = $1`, title).Scan(&lotID)
+	err = pool.QueryRow(ctx, `SELECT id FROM lots WHERE title = $1`, title).Scan(&lotID)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
