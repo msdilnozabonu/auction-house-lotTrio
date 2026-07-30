@@ -742,6 +742,10 @@ func (h *handler) GetReports(c *gin.Context){
 }
 
 
+func (h *handler) CancelLot(c *gin.Context)  {
+
+}
+
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
