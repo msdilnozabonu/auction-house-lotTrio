@@ -36,6 +36,13 @@ definitions:
     required:
     - amount
     type: object
+  lots.cancelRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
   lots.lotsRequest:
     properties:
       category:
@@ -83,6 +90,13 @@ definitions:
       totalPages:
         type: integer
     type: object
+  lots.reportRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
   lots.updateLotRequest:
     properties:
       ID:
@@ -111,6 +125,8 @@ definitions:
     properties:
       amount:
         type: number
+      bidder_id:
+        type: integer
       created_at:
         type: string
       lot_id:
@@ -179,6 +195,21 @@ definitions:
         type: array
       total_revenue:
         type: number
+    type: object
+  model.ReportLot:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      lot_id:
+        type: integer
+      reason:
+        type: string
+      reporter_id:
+        type: integer
+      status:
+        type: string
     type: object
   model.WatchItem:
     properties:
@@ -377,6 +408,60 @@ paths:
       security:
       - BearerAuth: []
       summary: Модерация лота
+      tags:
+      - admin
+  /admin/lots/{id}/cancel:
+    put:
+      consumes:
+      - application/json
+      description: Отменяет лот с указанием причины (только draft/live)
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Причина отмены
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/lots.cancelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Снять лот
+      tags:
+      - admin
+  /admin/reports:
+    get:
+      description: Возвращает необработанные жалобы на лоты
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ReportLot'
+            type: array
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Список жалоб
       tags:
       - admin
   /admin/stats:
@@ -633,7 +718,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Размещает ставку на активный лот
+      description: Размещает ставку на активный лот. Сумма ставки должна соответствовать
+        минимальному шагу ставки.
       parameters:
       - description: ID лота
         in: path
@@ -767,6 +853,81 @@ paths:
       summary: Добавить лот в список отслеживания
       tags:
       - watchlist
+  /lots/{id}/bids:
+    get:
+      description: |-
+        Возвращает историю ставок по указанному лоту.
+        Участник получает историю с пагинацией.
+        Продавец получает ставки по своему лоту.
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Номер страницы (для участника)
+        in: query
+        name: page
+        type: integer
+      - description: Количество элементов на странице (для участника)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Bid'
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Получить ставки по лоту
+      tags:
+      - bids
+  /lots/{id}/report:
+    post:
+      consumes:
+      - application/json
+      description: Пользователь сообщает о нарушении в лоте
+      parameters:
+      - description: ID лота
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Причина жалобы
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/lots.reportRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Пожаловаться на лот
+      tags:
+      - lots
   /lots/new:
     post:
       description: Создает лоты в базу

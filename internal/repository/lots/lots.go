@@ -469,6 +469,7 @@ func (r *repo) GetListOfReports(ctx context.Context) ([]model.ReportLot, error){
 		var rep model.ReportLot
 		if err := rows.Scan(&rep.ID, &rep.LotID,
 			&rep.ReporterID, &rep.Reason, &rep.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan report lot: %w", err)
 		}
 		result = append(result, rep)
 	}

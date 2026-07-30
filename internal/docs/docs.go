@@ -105,8 +105,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. 
-				Доступна только админу",
+                "description": "Возвращает все лоты с фильтрацией по статусу/продавцу/дате, поиск, пагинация. Доступна только админу",
                 "produces": [
                     "application/json"
                 ],
@@ -201,7 +200,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/lots/{id}/moderate": {
+        "/admin/lots/:id/moderate": {
             "put": {
                 "security": [
                     {
@@ -253,6 +252,92 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/lots/{id}/cancel": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Отменяет лот с указанием причины (только draft/live)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Снять лот",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Причина отмены",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.cancelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/admin/reports": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает необработанные жалобы на лоты",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Список жалоб",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.ReportLot"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/admin/stats": {
             "get": {
                 "security": [
@@ -260,8 +345,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, 
-топ-категории",
+                "description": "Метрики по всем торгам: лоты по статусам, суммарная выручка, средний чек, топ-категории",
                 "produces": [
                     "application/json"
                 ],
@@ -655,7 +739,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Размещает ставку на активный лот",
+                "description": "Размещает ставку на активный лот. Сумма ставки должна соответствовать минимальному шагу ставки.",
                 "consumes": [
                     "application/json"
                 ],
@@ -751,6 +835,124 @@ const docTemplate = `{
                 }
             }
         },
+        "/lots/:id/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Меняет статус лота draft→live→closed-\u003ecancelled",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Смена статуса",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/lots/:id/watch": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Добавляет лот в список по ID лота",
+                "tags": [
+                    "watchlist"
+                ],
+                "summary": "Добавить лот в список отслеживания",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Conflict"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет лот из списка отслеживания участника по ID лота",
+                "tags": [
+                    "watchlist"
+                ],
+                "summary": "Удалить лот из списка отслеживания",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/lots/new": {
             "post": {
                 "security": [
@@ -790,24 +992,112 @@ const docTemplate = `{
                 }
             }
         },
-        "/lots/{id}/status": {
-            "put": {
+        "/lots/{id}/bids": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Меняет статус лота draft→live→closed-\u003ecancelled",
+                "description": "Возвращает историю ставок по указанному лоту.\nУчастник получает историю с пагинацией.\nПродавец получает ставки по своему лоту.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bids"
+                ],
+                "summary": "Получить ставки по лоту",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы (для участника)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество элементов на странице (для участника)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Bid"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/lots/{id}/report": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Пользователь сообщает о нарушении в лоте",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "lots"
                 ],
-                "summary": "Смена статуса",
+                "summary": "Пожаловаться на лот",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Причина жалобы",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.reportRequest"
+                        }
+                    }
+                ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
                     },
                     "401": {
                         "description": "Unauthorized"
@@ -839,6 +1129,57 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/watchlist": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список отслеживания участника с пагинацией",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "watchlist"
+                ],
+                "summary": "Получить список отслеживания",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество элементов на странице",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/watchlist.WatchlistResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -940,6 +1281,17 @@ const docTemplate = `{
                 }
             }
         },
+        "lots.cancelRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "lots.lotsRequest": {
             "type": "object",
             "required": [
@@ -1009,6 +1361,17 @@ const docTemplate = `{
                 }
             }
         },
+        "lots.reportRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "lots.updateLotRequest": {
             "type": "object",
             "required": [
@@ -1048,6 +1411,9 @@ const docTemplate = `{
             "properties": {
                 "amount": {
                     "type": "number"
+                },
+                "bidder_id": {
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
@@ -1152,6 +1518,49 @@ const docTemplate = `{
                 }
             }
         },
+        "model.ReportLot": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lot_id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "reporter_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WatchItem": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "current_price": {
+                    "type": "number"
+                },
+                "lot_id": {
+                    "type": "integer"
+                },
+                "lot_title": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Win": {
             "type": "object",
             "properties": {
@@ -1166,6 +1575,29 @@ const docTemplate = `{
                 },
                 "winning_bid": {
                     "type": "number"
+                }
+            }
+        },
+        "watchlist.WatchlistResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.WatchItem"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "totalPages": {
+                    "type": "integer"
                 }
             }
         }

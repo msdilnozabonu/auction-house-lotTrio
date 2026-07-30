@@ -741,11 +741,6 @@ func (h *handler) GetReports(c *gin.Context){
 	response.RespondJSON(c, http.StatusOK, reports)
 }
 
-
-func (h *handler) CancelLot(c *gin.Context)  {
-
-}
-
 func parseID(c *gin.Context) (int64, int64, error) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -837,9 +832,9 @@ type moderateRequest struct {
 }
 
 type reportRequest struct {
-	Reason string `json:"reason" binding:"required"`
+	Reason string `binding:"required" json:"reason"`
 }
 
 type cancelRequest struct {
-	Reason string `json:"reason" binding:"required"`
+	Reason string `binding:"required" json:"reason"`
 }
