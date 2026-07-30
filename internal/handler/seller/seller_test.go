@@ -94,3 +94,103 @@ func TestHandler_GetSellerStats_ServiceError(t *testing.T) {
 	assert.NotEqual(t, http.StatusOK, w.Code)
 	mockService.AssertExpectations(t)
 }
+
+func setupTestContextWithParam(idParam string) (*gin.Context, *httptest.ResponseRecorder) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/seller/lots/"+idParam+"/cancel", nil).
+		WithContext(context.Background())
+	c.Params = gin.Params{{Key: "id", Value: idParam}}
+	return c, w
+}
+
+func TestHandler_CanceledLot(t *testing.T) {
+	tests := []struct {
+		name           string
+		setUserID      bool
+		userIDValue    interface{}
+		idParam        string
+		mockErr        error
+		expectCallMock bool
+		wantStatus     int
+	}{
+		{
+			name:           "success",
+			setUserID:      true,
+			userIDValue:    int64(42),
+			idParam:        "1",
+			mockErr:        nil,
+			expectCallMock: true,
+			wantStatus:     http.StatusOK,
+		},
+		{
+			name:           "no user_id in context",
+			setUserID:      false,
+			idParam:        "1",
+			expectCallMock: false,
+			wantStatus:     http.StatusInternalServerError, // поправьте под реальный код RespondError
+		},
+		{
+			name:           "invalid user_id type",
+			setUserID:      true,
+			userIDValue:    "not-an-int64",
+			idParam:        "1",
+			expectCallMock: false,
+			wantStatus:     http.StatusInternalServerError, // поправьте под реальный код RespondError
+		},
+		{
+			name:           "invalid id param",
+			setUserID:      true,
+			userIDValue:    int64(42),
+			idParam:        "not-a-number",
+			expectCallMock: false,
+			wantStatus:     http.StatusInternalServerError, // поправьте под реальный код RespondError
+		},
+		{
+			name:           "service returns error",
+			setUserID:      true,
+			userIDValue:    int64(42),
+			idParam:        "1",
+			mockErr:        errors.New("cancel lot: db error"),
+			expectCallMock: true,
+			wantStatus:     http.StatusInternalServerError, // поправьте под реальный код RespondError
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := new(seller.Mock)
+			h := &handler{sellerService: mockService}
+
+			c, w := setupTestContextWithParam(tt.idParam)
+			if tt.setUserID {
+				c.Set("user_id", tt.userIDValue)
+			}
+
+			if tt.expectCallMock {
+				mockService.On("CancelLot", c.Request.Context(), int64(1), int64(42)).
+					Return(tt.mockErr)
+			}
+
+			h.CanceledLot(c)
+
+			if tt.wantStatus == http.StatusOK {
+				assert.Equal(t, http.StatusOK, w.Code)
+
+				var got map[string]string
+				err := json.Unmarshal(w.Body.Bytes(), &got)
+				assert.NoError(t, err)
+				assert.Equal(t, "canceled", got["status"])
+			} else {
+				assert.NotEqual(t, http.StatusOK, w.Code)
+			}
+
+			if tt.expectCallMock {
+				mockService.AssertExpectations(t)
+			} else {
+				mockService.AssertNotCalled(t, "CancelLot")
+			}
+		})
+	}
+}

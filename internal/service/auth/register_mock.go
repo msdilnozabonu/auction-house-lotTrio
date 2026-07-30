@@ -10,6 +10,7 @@ import (
 type MockRegister struct {
 	mock.Mock
 }
+
 const errorIndex = 2
 
 func (m *MockRegister) Register(ctx context.Context, login, password string, role string) error {

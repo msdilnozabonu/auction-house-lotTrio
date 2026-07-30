@@ -87,6 +87,7 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		lotsGroup.DELETE("/:id/watch", middleware.RequireRole("bidder"), watchlistHandler.Delete)
 
 		lotsGroup.POST("/:id/report", lotHandler.ReportLot)
+		lotsGroup.PUT("/:id/cancel", sellerHandle.CanceledLot)
 	}
 
 	api.GET("/bids", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.GetBiddersBids)

@@ -405,7 +405,6 @@ func TestService_UpdateStatus(t *testing.T) {
 		m.On("UpdateStatus", mock.Anything, int64(1), "live").Return(true, nil)
 
 		svc := NewService(m)
-
 		err := svc.UpdateStatus(t.Context(), 10, 1, "live")
 
 		require.NoError(t, err)

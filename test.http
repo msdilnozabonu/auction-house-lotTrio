@@ -3,9 +3,9 @@ POST http://localhost:9999/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "login": "Maftuna",
-  "password":"adminadmin",
-  "role": "admin"
+  "login": "Maftuna1",
+  "password":"bidderbid",
+  "role": "bidder"
 }
 
 ###
@@ -13,9 +13,9 @@ POST http://localhost:9999/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "login": "Maftuna",
-  "password":"adminadmin",
-  "role": "admin"
+  "login": "Maftuna1",
+  "password":"bidderbid",
+  "role": "bidder"
 }
 
 
@@ -57,7 +57,7 @@ Authorization: Bearer {{accessToken}}
 ###
 POST http://localhost:9999/api/v1/lots/new
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzOTc3OTIsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.EkYwLPtvKQZgHeMB96TZMwYdoEJ-tC6Sh8s5R_xlsZQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODU0NDE3MTIsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.MXirAmeJdBkTw71FuHQZ2gR06lpvctMRH0h_Ard2oPw
 
 {
   "title": "Home",
@@ -181,12 +181,12 @@ Content-Type:   application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzMTExNzgsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.YvhbDLSOV87OZ1rxxPBYRZHLY5B10N4lA3EJMBjwlBA
 
 ###
-POST http://localhost:9999/api/v1/lots/20/bid
+POST http://localhost:9999/api/v1/lots/4/bid
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzMzMzNDgsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.bltfXklz_LjkVKTKBtIKhIwlm00s3u9vwNBWdNFRDtY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODU0NDIwNDMsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjZ9.YSwBUZX1i6G1OixDunI7tTOpS36y7RhCi7jGA83U4ZQ
 
 {
-  "amount": 20000
+  "amount": 20000000
 }
 
 ###
@@ -236,7 +236,17 @@ Content-Type: application/json
 {
   "reason": "reported by client"
 }
+
 ###
 GET http://localhost:9999/api/v1/seller/stats
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzOTg4NTcsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.PlRqPdkiVW4qbEcEp-I9wkf6Ai0s-NPf1FzIOu-0kjc
+
+###
+PUT http://localhost:9999/api/v1/lots/5/cancel
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODU0NDE3MTIsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.MXirAmeJdBkTw71FuHQZ2gR06lpvctMRH0h_Ard2oPw
+
+{
+  "status": "cancelled"
+}

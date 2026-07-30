@@ -5,6 +5,7 @@ import (
 	"auction-house-lotTrio/internal/service/seller"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +16,7 @@ type handler struct {
 
 type Handler interface {
 	GetSellerStats(c *gin.Context)
+	CanceledLot(c *gin.Context)
 }
 
 func NewHandler(sellerService seller.Service) Handler {
@@ -41,4 +43,32 @@ func (h *handler) GetSellerStats(c *gin.Context) {
 	}
 
 	response.RespondJSON(c, http.StatusOK, s)
+}
+
+func (h *handler) CanceledLot(c *gin.Context) {
+	userID, ok := c.Get("user_id")
+	if !ok {
+		response.RespondError(c, errors.New("no user_id found"))
+		return
+	}
+	sellerID, ok := userID.(int64)
+	if !ok {
+		response.RespondError(c, errors.New("no user_id found"))
+		return
+	}
+
+	idPar := c.Param("id")
+	id, err := strconv.ParseInt(idPar, 10, 64)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	err = h.sellerService.CancelLot(c.Request.Context(), id, sellerID)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "canceled"})
 }
