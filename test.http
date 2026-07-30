@@ -188,3 +188,51 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMTcxN
 {
   "amount": 20000
 }
+
+###
+POST http://localhost:9999/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "login": "bidder3",
+  "password": "bidderbid",
+  "role": "bidder"
+}
+
+###
+POST http://localhost:9999/api/v1/auth/login
+Content-Type: application/json
+
+{
+"login": "bidder3",
+"password":"bidderbid",
+"role": "bidder"
+}
+
+> {%
+    client.global.set("accessToken", response.body.access_token);
+    client.global.set("refreshToken", response.body.refresh_token);
+%}
+###
+
+###
+POST http://localhost:9999/api/v1/lots/2/report
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "reason": "too expensive"
+}
+
+###
+GET http://localhost:9999/api/v1/admin/reports
+Authorization: Bearer {{accessToken}}
+
+###
+PUT http://localhost:9999/api/v1/admin/lots/2/cancel
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "reason": "reported by client"
+}

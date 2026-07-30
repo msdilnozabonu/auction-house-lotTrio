@@ -50,7 +50,12 @@ const (
       	AND ($2 = '' OR title ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
       	AND ($3 = '' OR category = $3) AND ($4 = 0 OR current_price >= $4)
       	AND ($5 = 0 OR current_price <= $5) ORDER BY id LIMIT $6 OFFSET $7`
-	cancelLot = `UPDATE lot SET status = 'cancelled' WHERE id = $1`
+	cancelLot = `UPDATE lots SET status = 'cancelled', cancellation_reason = $1
+            WHERE id = $2 AND status IN('draft', 'live')`
+	createReport= `INSERT INTO reports (lot_id, reporter_id, reason)
+				VALUES ($1, $2, $3)`
+	getListOfReports = `SELECT id, lot_id, reporter_id, reason, created_at 
+		FROM reports WHERE status = 'pending' ORDER BY created_at`
 )
 
 type Repo interface {
@@ -72,6 +77,9 @@ type Repo interface {
 	ExportLots(ctx context.Context, dateField string, dateFrom, dateTo time.Time) (
 		[]model.LotsExport, error)
 	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
+	CancelLot(ctx context.Context, id int64, reason string) (bool, error)
+	CreateReport(ctx context.Context, lotId, reporterId int64, reason string) error
+	GetListOfReports(ctx context.Context) ([]model.ReportLot, error)
 }
 
 type repo struct {
@@ -430,11 +438,42 @@ func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.Lot
 	return out, 0, nil
 }
 
-//
-// func (r *repo) CancelLot(ctx context.Context, id int64) (bool, error)  {
-//	row, err := r.repo.Exec(ctx, `UPDATE lots SET status = 'cancelled' WHERE id = $1`, id)
-//		if err != nil {
-//			return false, fmt.Errorf("cancel lot: %w", err)
-//		}
-//	return row.RowsAffected() > 0, nil
-//}
+func (r *repo) CancelLot(ctx context.Context, id int64, reason string) (bool, error) {
+	row, err := r.repo.Exec(ctx, cancelLot, reason, id)
+	if err != nil {
+		return false, fmt.Errorf("cancel lot: %w", err)
+	}
+	affected := row.RowsAffected()
+	if affected == 0 {
+		return false, model.ErrStatusNotChanged
+	}
+	return true, nil
+}
+
+func (r *repo) CreateReport(ctx context.Context, lotId, reporterId int64, reason string) error{
+	_, err := r.repo.Exec(ctx, createReport, lotId, reporterId, reason)
+		if err != nil {
+			return fmt.Errorf("create report: %w", err)
+		}
+		return nil
+}
+
+func (r *repo) GetListOfReports(ctx context.Context) ([]model.ReportLot, error){
+	rows, err := r.repo.Query(ctx, getListOfReports)
+	if err != nil {
+		return nil, fmt.Errorf("get list of reports: %w", err)
+	}
+	defer rows.Close()
+	var result []model.ReportLot
+	for rows.Next(){
+		var rep model.ReportLot
+		if err := rows.Scan(&rep.ID, &rep.LotID,
+			&rep.ReporterID, &rep.Reason, &rep.CreatedAt); err != nil {
+		}
+		result = append(result, rep)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get list of reports: %w", err)
+	}
+	return result, nil
+}

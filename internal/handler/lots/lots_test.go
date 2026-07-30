@@ -928,3 +928,75 @@ func TestHandler_GetMine_Success(t *testing.T) {
 	h.GetMine(c)
 	require.Equal(t, http.StatusOK, w.Code)
 }
+
+func TestHandler_CancelLot_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	h := NewHandler(m)
+	m.On("CancelLot", mock.Anything, int64(2), "reason").Return(nil)
+	body := `{"reason":"reason"}`
+	req := httptest.NewRequest(http.MethodPut, "/admin/lots/2/cancel", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{{Key: "id", Value: "2"}}
+	h.CancelLot(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	m.AssertExpectations(t)
+}
+func TestHandler_ReportLot_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	h := NewHandler(m)
+	m.On("ReportLot", mock.Anything, int64(2), int64(4), "reason").Return(nil)
+	body := `{"reason":"reason"}`
+	req := httptest.NewRequest(http.MethodPut, "/admin/lots/2/report", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{{Key: "id", Value: "2"}}
+	c.Set("user_id", int64(4))
+	h.ReportLot(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	m.AssertExpectations(t)
+}
+func TestHandler_ReportLot_DbError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	h := NewHandler(m)
+	m.On("ReportLot", mock.Anything, int64(2), int64(4), "reason").Return(errors.New("db error"))
+	body := `{"reason":"reason"}`
+	req := httptest.NewRequest(http.MethodPut, "/admin/lots/2/report", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{{Key: "id", Value: "2"}}
+	c.Set("user_id", int64(4))
+	h.ReportLot(c)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	m.AssertExpectations(t)
+
+}
+func TestHandler_GetReports_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	m := new(lots.Mock)
+	h := NewHandler(m)
+	expected := []model.ReportLot{
+		{ID: 1, LotID: 2, ReporterID: 42, Reason: "reason"},
+	}
+	m.On("GetListOfReports", mock.Anything).Return(expected, nil)
+	req := httptest.NewRequest(http.MethodGet, "/admin/reports", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	h.GetReports(c)
+	require.Equal(t, http.StatusOK, w.Code)
+	var got []model.ReportLot
+	err := json.Unmarshal(w.Body.Bytes(), &got)
+	require.NoError(t, err)
+	require.Equal(t, expected, got)
+	m.AssertExpectations(t)
+}

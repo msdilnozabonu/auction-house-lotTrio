@@ -1,0 +1,1 @@
+alter table lots add column cancellation_reason text;

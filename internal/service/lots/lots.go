@@ -28,6 +28,9 @@ type Service interface {
 	GetPlatformStats(ctx context.Context) (model.PlatformStats, error)
 	ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error)
 	GetMineLots(ctx context.Context, sellerID int64, filter model.LotsFilter) ([]model.Lots, int, error)
+	CancelLot(ctx context.Context, id int64, reason string) error
+	ReportLot(ctx context.Context, lotId, reporterId int64, reason string) error
+	GetListOfReports(ctx context.Context) ([]model.ReportLot, error)
 }
 
 type service struct {
@@ -322,15 +325,39 @@ func (s *service) GetMineLots(ctx context.Context, sellerID int64, filter model.
 	}
 	return items, total, nil
 }
-//
-// func (s *service) CancelLot(ctx context.Context, id int64, report *model.ReportLot) (bool, error) {
-//	lot, err := s.lotsRepo.CancelLot(ctx, id)
-//	if err != nil {
-//		s.logger.Error("cancel lot", "err", err)
-//		return false, fmt.Errorf("cancel lot: %w", err)
-//	}
-//	if !lot {
-//		return false, nil
-//	}
-//	return true, nil
-// }
+
+func (s *service) CancelLot(ctx context.Context, id int64, reason string) error {
+	if reason == "" {
+		return errors.New("reason is required")
+	}
+	ok, err := s.lotsRepo.CancelLot(ctx, id, reason)
+	if err != nil {
+		s.logger.Error("cancel lot", "err", err)
+		return fmt.Errorf("cancel lot: %w", err)
+	}
+	if !ok {
+		return model.ErrStatusNotChanged
+	}
+	return nil
+}
+
+func (s *service) ReportLot(ctx context.Context, lotId, reporterId int64, reason string) error{
+	if reason == "" {
+		return errors.New("reason is required")
+	}
+	err := s.lotsRepo.CreateReport(ctx, lotId, reporterId, reason)
+	if err != nil {
+		s.logger.Error("report lot", "err", err)
+		return fmt.Errorf("report lot: %w", err)
+	}
+	return nil
+}
+
+func (s *service) GetListOfReports(ctx context.Context) ([]model.ReportLot, error) {
+	reports, err := s.lotsRepo.GetListOfReports(ctx)
+	if err != nil {
+		s.logger.Error("get list of reports", "err", err)
+		return nil, fmt.Errorf("get list of reports: %w", err)
+	}
+	return reports, nil
+}

@@ -21,6 +21,21 @@ type MockRepo struct {
 	mock.Mock
 }
 
+func (m *MockRepo) CancelLot(ctx context.Context, id int64, reason string) (bool, error) {
+	args := m.Called(ctx, id, reason)
+	return args.Bool(resultIndex), args.Error(errorIndex)
+}
+
+func (m *MockRepo) CreateReport(ctx context.Context, lotId, reporterId int64, reason string) error {
+	args := m.Called(ctx, lotId, reporterId, reason)
+	return args.Error(0)
+}
+
+func (m *MockRepo) GetListOfReports(ctx context.Context) ([]model.ReportLot, error) {
+	args := m.Called(ctx)
+		return args.Get(0).([]model.ReportLot), args.Error(1)
+}
+
 func (m *MockRepo) ExportLots(ctx context.Context, dateField string,
 	dateFrom, dateTo time.Time) ([]model.LotsExport, error) {
 	args := m.Called(ctx, dateField, dateFrom, dateTo)
