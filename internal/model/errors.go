@@ -36,4 +36,5 @@ var (
 	// Bids error
 	ErrBidTooLow = errors.New("the bid amount is too low")
 	ErrLotNotLive = errors.New("cannot place a bid on a draft or closed lot")
+	ErrHasBids = errors.New("lot has bids")
 )

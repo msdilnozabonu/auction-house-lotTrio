@@ -48,3 +48,48 @@ func TestMockRepo_GetSellerStats_Error(t *testing.T) {
 	assert.Equal(t, model.SellerStats{}, result)
 	m.AssertExpectations(t)
 }
+
+func TestMock_CancelLot(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		id       int64
+		sellerID int64
+		mockErr  error
+		wantErr  bool
+	}{
+		{
+			name:     "success",
+			id:       1,
+			sellerID: 42,
+			mockErr:  nil,
+			wantErr:  false,
+		},
+		{
+			name:     "repo error",
+			id:       2,
+			sellerID: 42,
+			mockErr:  errors.New("cancel lot: db error"),
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := new(Mock)
+			m.On("CancelLot", ctx, tt.id, tt.sellerID).Return(tt.mockErr)
+
+			err := m.CancelLot(ctx, tt.id, tt.sellerID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.mockErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			m.AssertExpectations(t)
+		})
+	}
+}

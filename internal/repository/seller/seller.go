@@ -4,6 +4,7 @@ import (
 	"auction-house-lotTrio/internal/model"
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -17,15 +18,19 @@ const (
 
 type sellerRepo struct {
 	pool *pgxpool.Pool
+
+
 }
 
 type Repo interface {
 	GetSellerStats(ctx context.Context, sellerID int64) (model.SellerStats, error)
+	CanceledLot(ctx context.Context, id, sellerID int64 ) error
 }
 
 func New(pool *pgxpool.Pool) (Repo, error) {
 	return &sellerRepo{
 		pool: pool,
+
 	}, nil
 }
 
@@ -57,4 +62,13 @@ func (r *sellerRepo) GetSellerStats(ctx context.Context, sellerID int64) (model.
 
 	s.TopLots = out
 	return s, nil
+}
+
+func (r *sellerRepo) CanceledLot(ctx context.Context, id, sellerID int64 ) error {
+	_, err := r.pool.Exec(ctx, `UPDATE lots SET status = 'cancelled' WHERE id = $1 AND seller_id = $2`, id, sellerID)
+	if err != nil {
+		slog.Error("update canceled lot", "err", err)
+		return fmt.Errorf("cancel lot: %w", err)
+	}
+	return nil
 }

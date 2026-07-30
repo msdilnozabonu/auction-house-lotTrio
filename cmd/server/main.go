@@ -203,7 +203,7 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 		slog.Error("create seller stats repository", "err", err)
 		os.Exit(1)
 	}
-	sellerStatsService := seller3.NewService(sellerStatsRepo)
+	sellerStatsService := seller3.NewService(sellerStatsRepo, bidRepo, lotsRepo)
 	sellerHandle := seller.NewHandler(sellerStatsService)
 
 	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler, bidHandler, winsHandler,
