@@ -2,6 +2,8 @@ package seller
 
 import (
 	"auction-house-lotTrio/internal/model"
+	repoBid "auction-house-lotTrio/internal/repository/bid"
+	"auction-house-lotTrio/internal/repository/lots"
 	"auction-house-lotTrio/internal/repository/seller"
 	"context"
 	"errors"
@@ -12,6 +14,8 @@ import (
 
 func TestMockRepo_GetSellerStats_Success(t *testing.T) {
 	m := new(seller.MockRepo)
+	n := new(lots.MockRepo)
+	b := new(repoBid.MockRepo)
 	ctx := context.Background()
 	sellerID := int64(42)
 
@@ -27,7 +31,8 @@ func TestMockRepo_GetSellerStats_Success(t *testing.T) {
 
 	m.On("GetSellerStats", ctx, sellerID).Return(expected, nil)
 
-	result, err := m.GetSellerStats(ctx, sellerID)
+	svc := NewService(m, b, n )
+	result, err := svc.GetSellerStats(ctx, sellerID)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
@@ -36,13 +41,16 @@ func TestMockRepo_GetSellerStats_Success(t *testing.T) {
 
 func TestMockRepo_GetSellerStats_Error(t *testing.T) {
 	m := new(seller.MockRepo)
+	n := new(lots.MockRepo)
+	b := new(repoBid.MockRepo)
 	ctx := context.Background()
 	sellerID := int64(99)
 
 	m.On("GetSellerStats", ctx, sellerID).
 		Return(model.SellerStats{}, errors.New("seller stats: db error"))
 
-	result, err := m.GetSellerStats(ctx, sellerID)
+	svc := NewService(m, b,n)
+	result, err := svc.GetSellerStats(ctx, sellerID)
 
 	assert.Error(t, err)
 	assert.Equal(t, model.SellerStats{}, result)
@@ -68,7 +76,7 @@ func TestMock_CancelLot(t *testing.T) {
 		},
 		{
 			name:     "repo error",
-			id:       2,
+			id:       1,
 			sellerID: 42,
 			mockErr:  errors.New("cancel lot: db error"),
 			wantErr:  true,
@@ -77,14 +85,22 @@ func TestMock_CancelLot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := new(Mock)
-			m.On("CancelLot", ctx, tt.id, tt.sellerID).Return(tt.mockErr)
+			m := new(seller.MockRepo)
+			n := new(lots.MockRepo)
+			b := new(repoBid.MockRepo)
 
-			err := m.CancelLot(ctx, tt.id, tt.sellerID)
+			existing := &model.Lots{ID: 1, SellerID: 42, Status: "draft"}
+			n.On("GetById", ctx, int64(1)).Return(existing, nil)
+			b.On("GetBidsByLotIDForSeller", ctx, int64(1)).Return([]model.Bid{}, nil)
+			m.On("CanceledLot", ctx, tt.id, tt.sellerID).Return(tt.mockErr)
+
+
+			svc := NewService(m, b,n)
+			err := svc.CancelLot(ctx, tt.id, tt.sellerID)
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.mockErr.Error())
+				assert.ErrorIs(t, err, tt.mockErr)
 			} else {
 				assert.NoError(t, err)
 			}
