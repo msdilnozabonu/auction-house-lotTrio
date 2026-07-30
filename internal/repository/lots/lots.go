@@ -43,13 +43,14 @@ const (
 		FROM lots WHERE status = 'closed' AND current_winner_id IS NOT NULL`
 	topCategories = `SELECT category, COUNT(*), COALESCE(SUM(current_price), 0) FROM lots WHERE status = 'closed'
 		AND current_winner_id IS NOT NULL GROUP BY category ORDER BY SUM(current_price) DESC LIMIT 5`
-lotExport = `SELECT id, title, category, status, seller_id, current_price, ends_at 
+	lotExport = `SELECT id, title, category, status, seller_id, current_price, ends_at 
 	FROM lots WHERE %s BETWEEN $1 AND $2 ORDER BY id`
 	selectMine = `Select id, seller_id, title, description,category, start_price, current_price,
        COALESCE(current_winner_id, 0), status, starts_at, ends_at, photo_path FROM lots WHERE seller_id = $1 
       	AND ($2 = '' OR title ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
       	AND ($3 = '' OR category = $3) AND ($4 = 0 OR current_price >= $4)
       	AND ($5 = 0 OR current_price <= $5) ORDER BY id LIMIT $6 OFFSET $7`
+	cancelLot = `UPDATE lot SET status = 'cancelled' WHERE id = $1`
 )
 
 type Repo interface {
@@ -428,3 +429,12 @@ func (r *repo) GetMineLots(ctx context.Context, sellerID int64, filter model.Lot
 	}
 	return out, 0, nil
 }
+
+//
+// func (r *repo) CancelLot(ctx context.Context, id int64) (bool, error)  {
+//	row, err := r.repo.Exec(ctx, `UPDATE lots SET status = 'cancelled' WHERE id = $1`, id)
+//		if err != nil {
+//			return false, fmt.Errorf("cancel lot: %w", err)
+//		}
+//	return row.RowsAffected() > 0, nil
+//}
