@@ -42,7 +42,7 @@ func NewHandler(authService auth.Service) Handler {
 func (h *handler) Registration(c *gin.Context) {
 	var request registerRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *handler) Registration(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully!"})
+	response.RespondJSON(c, http.StatusCreated, gin.H{"message": "User created successfully!"})
 }
 
 // Login godoc
@@ -69,7 +69,7 @@ func (h *handler) Registration(c *gin.Context) {
 func (h *handler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *handler) Login(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	response.RespondJSON(c, http.StatusOK, user)
 }
 
 // Refresh godoc
@@ -96,7 +96,7 @@ func (h *handler) Login(c *gin.Context) {
 func (h *handler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 
@@ -105,7 +105,7 @@ func (h *handler) Refresh(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, tokens)
+	response.RespondJSON(c, http.StatusOK, tokens)
 }
 
 // Logout godoc
@@ -124,7 +124,7 @@ func (h *handler) Refresh(c *gin.Context) {
 func (h *handler) Logout(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{errorKey: err.Error()})
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorKey: err.Error()})
 		return
 	}
 

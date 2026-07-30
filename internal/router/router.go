@@ -9,6 +9,7 @@ import (
 	"auction-house-lotTrio/internal/handler/watchlist"
 	"auction-house-lotTrio/internal/handler/wins"
 	"auction-house-lotTrio/internal/middleware"
+	"auction-house-lotTrio/internal/response"
 	"context"
 	"net/http"
 
@@ -31,15 +32,15 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	api := engine.Group("/api/v1")
 
 	api.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "pong"})
+		response.RespondJSON(c, http.StatusOK, gin.H{"message": "pong"})
 	})
 
 	api.GET("/health", func(c *gin.Context) {
 		if err := pool.Ping(ctx); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "db unreachable"})
+			response.RespondJSON(c, http.StatusServiceUnavailable, gin.H{"status": "db unreachable"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		response.RespondJSON(c, http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

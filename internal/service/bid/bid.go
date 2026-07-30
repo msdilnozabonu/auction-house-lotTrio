@@ -14,7 +14,7 @@ const (
 	minStepPercent = 5
 	statusLive     = "live"
 	defaultLimit   = 15
-	wholePercent = 100
+	wholePercent   = 100
 )
 
 type Service interface {
@@ -103,7 +103,7 @@ func (s *service) GetBidsByLotIDForBidder(ctx context.Context, lotID int64, page
 	if limit <= 0 {
 		limit = defaultLimit
 	}
-	filter := model.BidFilter{LotID:  lotID, Limit:  limit, Offset: (page - 1) * limit}
+	filter := model.BidFilter{LotID: lotID, Limit: limit, Offset: (page - 1) * limit}
 	bids, err := s.bidsRepo.GetBidsByLotIDForBidder(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("get bids: %w", err)

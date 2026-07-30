@@ -40,5 +40,5 @@ func (h *handler) GetSellerStats(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, s)
+	response.RespondJSON(c, http.StatusOK, s)
 }

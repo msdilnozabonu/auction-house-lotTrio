@@ -2,7 +2,7 @@
 
 [![Lint](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/lint.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/lint.yml)
 [![Nilaway](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/nilaway.yml/badge.svg?branch=develop)](https://github.com/msdilnozabonu/auction-house-lotTrio/actions/workflows/nilaway.yml)
-[![Coverage](https://raw.githubusercontent.com/msdilnozabonu/auction-house-lotTrio/badges/coverage.svg)](https://github.com/msdilnozabonu/auction-house-lotTrio/tree/badges)
+[![Coverage](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/coverage.svg)](https://github.com/msdilnozabonu/auction-house-lotTrio/blob/badges/coverage.svg)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 
 ## Описание
