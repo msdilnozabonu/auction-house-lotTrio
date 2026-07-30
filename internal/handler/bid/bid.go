@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	messageKey = "message"
+	messageKey       = "message"
 	defaultPage      = 1
 	defaultPageLimit = 15
 )

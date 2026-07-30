@@ -112,7 +112,7 @@ func (h *handler) CreateLot(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{messageKey: "Lot created successfully!"})
+	response.RespondJSON(c, http.StatusCreated, gin.H{messageKey: "Lot created successfully!"})
 }
 
 // GetAll  godoc
@@ -144,7 +144,7 @@ func (h *handler) GetAll(c *gin.Context) {
 	if total > 0 {
 		totalPages = (total + filter.Limit - 1) / filter.Limit
 	}
-	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, Page: filter.Page,
+	response.RespondJSON(c, http.StatusOK, pagResponse{Items: items, Total: total, Page: filter.Page,
 		Limit: filter.Limit, TotalPages: totalPages})
 }
 
@@ -232,7 +232,7 @@ func (h *handler) UpdateByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{messageKey: "Lot updated successfully!"})
+	response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Lot updated successfully!"})
 }
 
 // UpdateStatusByID  godoc
@@ -264,7 +264,7 @@ func (h *handler) UpdateStatusByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{messageKey: "Status updated successfully!"})
+	response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Status updated successfully!"})
 }
 
 // DeleteLots  godoc
@@ -291,7 +291,7 @@ func (h *handler) DeleteLots(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{messageKey: "Lot deleted successfully!"})
+	response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Lot deleted successfully!"})
 }
 
 // GetLotsForAdmin godoc
@@ -450,7 +450,7 @@ func (h *handler) UploadPhoto(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response.RespondJSON(c, http.StatusOK, gin.H{
 		"file": fileName,
 		"size": file.Size,
 	})
@@ -478,7 +478,7 @@ func (h *handler) GetPhoto(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"photo_path": photo})
+	response.RespondJSON(c, http.StatusOK, gin.H{"photo_path": photo})
 }
 
 // Moderate godoc
@@ -515,7 +515,7 @@ func (h *handler) Moderate(c *gin.Context) {
 		return
 	}
 	h.logger.Info("moderate lots repository", "id", id, "approve", req.Approve, "reason", req.Reason)
-	c.JSON(http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
+	response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Lot moderated successfully!"})
 }
 
 func (h *handler) GetMine(c *gin.Context) {
@@ -544,7 +544,7 @@ func (h *handler) GetMine(c *gin.Context) {
 		totalPages = (total + filter.Limit - 1) / filter.Limit
 	}
 
-	c.JSON(http.StatusOK, pagResponse{Items: items, Total: total, TotalPages: totalPages})
+	response.RespondJSON(c, http.StatusOK, pagResponse{Items: items, Total: total, TotalPages: totalPages})
 }
 
 // GetPlatformStats godoc
@@ -636,6 +636,7 @@ func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
 	}
 	w.Flush()
 }
+
 // CancelLot godoc
 // @Summary      Снять лот
 // @Description  Отменяет лот с указанием причины (только draft/live)
@@ -650,27 +651,27 @@ func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
 // @Failure      401
 // @Failure      500
 // @Router       /admin/lots/{id}/cancel [put]
-func (h *handler) CancelLot(c *gin.Context)  {
+func (h *handler) CancelLot(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
-	 if err != nil {
-		 h.logger.Error("cancel lot repository", "err", err)
-		 response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid id"})
-		 return
-	 }
-	 var req cancelRequest
+	if err != nil {
+		h.logger.Error("cancel lot repository", "err", err)
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid id"})
+		return
+	}
+	var req cancelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("cancel lot repository", "err", err)
-		 response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: err.Error()})
-		 return
-	 }
-	 err = h.lotsService.CancelLot(c.Request.Context(), id, req.Reason)
-	 if err != nil {
-		 h.logger.Error("cancel lot repository", "err", err)
-		 response.RespondError(c, err)
-		 return
-	 }
-	 response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Lot canceled successfully!"})
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: err.Error()})
+		return
+	}
+	err = h.lotsService.CancelLot(c.Request.Context(), id, req.Reason)
+	if err != nil {
+		h.logger.Error("cancel lot repository", "err", err)
+		response.RespondError(c, err)
+		return
+	}
+	response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Lot canceled successfully!"})
 }
 
 // ReportLot godoc
@@ -694,14 +695,14 @@ func (h *handler) ReportLot(c *gin.Context) {
 		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid id"})
 		return
 	}
-	userId, ok:= c.Get("user_id")
+	userId, ok := c.Get("user_id")
 	if !ok {
 		h.logger.Error("report lot repository", "err", err)
 		response.RespondError(c, model.ErrUnauthorized)
 		return
 	}
-	reporterId, ok:=userId.(int64)
-	if !ok{
+	reporterId, ok := userId.(int64)
+	if !ok {
 		h.logger.Error("report lot repository", "err", err)
 		response.RespondError(c, model.ErrForbidden)
 		return
@@ -731,8 +732,8 @@ func (h *handler) ReportLot(c *gin.Context) {
 // @Failure      401
 // @Failure      500
 // @Router       /admin/reports [get]
-func (h *handler) GetReports(c *gin.Context){
-	reports, err:= h.lotsService.GetListOfReports(c.Request.Context())
+func (h *handler) GetReports(c *gin.Context) {
+	reports, err := h.lotsService.GetListOfReports(c.Request.Context())
 	if err != nil {
 		h.logger.Error("get reports repository", "err", err)
 		response.RespondError(c, err)

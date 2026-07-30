@@ -33,13 +33,13 @@ func (m *MockRepo) CreateReport(ctx context.Context, lotId, reporterId int64, re
 
 func (m *MockRepo) GetListOfReports(ctx context.Context) ([]model.ReportLot, error) {
 	args := m.Called(ctx)
-		return args.Get(0).([]model.ReportLot), args.Error(1)
+	return args.Get(0).([]model.ReportLot), args.Error(1)
 }
 
 func (m *MockRepo) ExportLots(ctx context.Context, dateField string,
 	dateFrom, dateTo time.Time) ([]model.LotsExport, error) {
 	args := m.Called(ctx, dateField, dateFrom, dateTo)
-		return args.Get(0).([]model.LotsExport), args.Error(1)
+	return args.Get(0).([]model.LotsExport), args.Error(1)
 }
 
 func (m *MockRepo) GetPlatformStats(ctx context.Context) (model.PlatformStats, error) {

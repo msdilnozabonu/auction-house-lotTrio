@@ -860,12 +860,15 @@ func TestHandler_UploadPhoto_Success(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("photo", "test.png")
-	part.Write([]byte{
+	part, err := writer.CreateFormFile("photo", "test.png")
+	require.NoError(t, err)
+	_, err = part.Write([]byte{
 		0x89, 0x50, 0x4E, 0x47,
 		0x0D, 0x0A, 0x1A, 0x0A,
 	})
-	writer.Close()
+	require.NoError(t, err)
+	err = writer.Close()
+	require.NoError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/lots/1/photo", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	c.Request = req

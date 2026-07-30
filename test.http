@@ -5,7 +5,7 @@ Content-Type: application/json
 {
   "login": "Maftuna",
   "password":"adminadmin",
-  "role": "bidder"
+  "role": "admin"
 }
 
 ###
@@ -15,7 +15,7 @@ Content-Type: application/json
 {
   "login": "Maftuna",
   "password":"adminadmin",
-  "role": "bidder"
+  "role": "admin"
 }
 
 
@@ -57,15 +57,16 @@ Authorization: Bearer {{accessToken}}
 ###
 POST http://localhost:9999/api/v1/lots/new
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ3MjU4MjcsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.IonYwDWfk086W2Z8LlYsDZsrGSh6KTaV4dMpi3_VYlA
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzOTc3OTIsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.EkYwLPtvKQZgHeMB96TZMwYdoEJ-tC6Sh8s5R_xlsZQ
 
 {
-  "title": "Iphone",
+  "title": "Home",
   "description": "good phone",
-  "startPrice": 12000,
+  "startPrice": 20000000,
   "photo": "https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg",
   "endsAt": "2026-12-31T23:59:59Z",
-  "status": "live"
+  "status": "live",
+  "category": "home"
 }
 
 ###
@@ -134,12 +135,12 @@ Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ3Mjg5NDYsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.4cL0nnSTKuXcBzCjZaaXeFl3kB0Xx7pB088O60L8ddM
 
 ###
-PUT http://localhost:9999/api/v1/lots/12/status
+PUT http://localhost:9999/api/v1/lots/3/status
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ4MTEwODMsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.orCuJkxXADCMmhIo1C_uSLcshnStjtVioDk624jlMIg
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzOTc3OTIsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.EkYwLPtvKQZgHeMB96TZMwYdoEJ-tC6Sh8s5R_xlsZQ
 
 {
-  "status": "cancelled"
+  "status": "closed"
 }
 
 ###
@@ -171,19 +172,18 @@ Authorization: Bearer {{accessToken}}
 ###
 GET http://localhost:9999/api/v1/admin/stats
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMjkzNjUsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.imjI95-Z-ibf01s0DSpzAo8k9Ltjj3HGTZ1ZiZuxgZI
 
 ###
-GET http://localhost:9999/api/v1/admin/export?format=json&date_from=2026-07-01
-Authorization: Bearer {{accessToken}}
+
 GET http://localhost:9999/api/v1/lots/19/bids
 Content-Type:   application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMTY2NTUsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.X23uAC2XyQqBs0MtL0YupxBqjJMl4YvmjsVhQLG4HIM
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzMTExNzgsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.YvhbDLSOV87OZ1rxxPBYRZHLY5B10N4lA3EJMBjwlBA
 
 ###
-POST http://localhost:9999/api/v1/lots/19/bid
+POST http://localhost:9999/api/v1/lots/20/bid
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUyMTcxNDgsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.EkSelIudphfrK62OiHOYjoJALWTXDxogP5KPbTGxMvs
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzMzMzNDgsInJvbGUiOiJiaWRkZXIiLCJ1aWQiOjN9.bltfXklz_LjkVKTKBtIKhIwlm00s3u9vwNBWdNFRDtY
 
 {
   "amount": 20000
@@ -236,3 +236,7 @@ Content-Type: application/json
 {
   "reason": "reported by client"
 }
+###
+GET http://localhost:9999/api/v1/seller/stats
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODUzOTg4NTcsInJvbGUiOiJhZG1pbiIsInVpZCI6MX0.PlRqPdkiVW4qbEcEp-I9wkf6Ai0s-NPf1FzIOu-0kjc

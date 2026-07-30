@@ -50,7 +50,7 @@ func TestHandler_Login(t *testing.T) {
 		m.AssertExpectations(t)
 	})
 }
-	func TestHandler_Register(t *testing.T) {
+func TestHandler_Register(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	t.Run("success", func(t *testing.T) {
 		m := new(auth.MockRegister)
@@ -123,8 +123,8 @@ func TestHandler_Refresh(t *testing.T) {
 		h := NewHandler(m)
 		h.Refresh(c)
 		require.Equal(t, http.StatusInternalServerError, w.Code)
-			require.Contains(t, w.Body.String(), "db error")
-			m.AssertExpectations(t)
+		require.Contains(t, w.Body.String(), "db error")
+		m.AssertExpectations(t)
 	})
 }
 
