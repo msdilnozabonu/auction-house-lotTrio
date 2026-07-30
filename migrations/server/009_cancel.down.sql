@@ -1,0 +1,1 @@
+alter table lots drop column if exists cancellation_reason;

@@ -31,6 +31,9 @@ type Handler interface {
 	GetPlatformStats(c *gin.Context)
 	ExportLots(c *gin.Context)
 	GetMine(c *gin.Context)
+	CancelLot(c *gin.Context)
+	ReportLot(c *gin.Context)
+	GetReports(c *gin.Context)
 }
 
 type handler struct {
@@ -66,11 +69,11 @@ func (h *handler) CloseExpiredLot(c *gin.Context) {
 }
 
 const (
-	messageKey    = "message"
-	errorMsg      = "error"
-	pageSizeLimit = 20
+	messageKey       = "message"
+	errorMsg         = "error"
+	pageSizeLimit    = 20
 	internalErrorMsg = "internal server error"
-	jsonFormat = "json"
+	jsonFormat       = "json"
 )
 
 // CreateLot     godoc
@@ -633,9 +636,109 @@ func (h *handler) ExportLots(c *gin.Context) { //nolint:cyclop
 	}
 	w.Flush()
 }
-
+// CancelLot godoc
+// @Summary      Снять лот
+// @Description  Отменяет лот с указанием причины (только draft/live)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true  "ID лота"
+// @Param        input body cancelRequest true "Причина отмены"
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Failure      500
+// @Router       /admin/lots/{id}/cancel [put]
 func (h *handler) CancelLot(c *gin.Context)  {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	 if err != nil {
+		 h.logger.Error("cancel lot repository", "err", err)
+		 response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid id"})
+		 return
+	 }
+	 var req cancelRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("cancel lot repository", "err", err)
+		 response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: err.Error()})
+		 return
+	 }
+	 err = h.lotsService.CancelLot(c.Request.Context(), id, req.Reason)
+	 if err != nil {
+		 h.logger.Error("cancel lot repository", "err", err)
+		 response.RespondError(c, err)
+		 return
+	 }
+	 response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Lot canceled successfully!"})
+}
 
+// ReportLot godoc
+// @Summary      Пожаловаться на лот
+// @Description  Пользователь сообщает о нарушении в лоте
+// @Tags         lots
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "ID лота"
+// @Param        input body reportRequest true "Причина жалобы"
+// @Success      201
+// @Failure      400
+// @Failure      401
+// @Router       /lots/{id}/report [post]
+func (h *handler) ReportLot(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		h.logger.Error("report lot repository", "err", err)
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: "invalid id"})
+		return
+	}
+	userId, ok:= c.Get("user_id")
+	if !ok {
+		h.logger.Error("report lot repository", "err", err)
+		response.RespondError(c, model.ErrUnauthorized)
+		return
+	}
+	reporterId, ok:=userId.(int64)
+	if !ok{
+		h.logger.Error("report lot repository", "err", err)
+		response.RespondError(c, model.ErrForbidden)
+		return
+	}
+	var report reportRequest
+	if err := c.ShouldBindJSON(&report); err != nil {
+		h.logger.Error("report lot repository", "err", err)
+		response.RespondJSON(c, http.StatusBadRequest, gin.H{errorMsg: err.Error()})
+		return
+	}
+	err = h.lotsService.ReportLot(c.Request.Context(), id, reporterId, report.Reason)
+	if err != nil {
+		h.logger.Error("report lot repository", "err", err)
+		response.RespondError(c, err)
+		return
+	}
+	response.RespondJSON(c, http.StatusOK, gin.H{messageKey: "Report sent successfully!"})
+}
+
+// GetReports godoc
+// @Summary      Список жалоб
+// @Description  Возвращает необработанные жалобы на лоты
+// @Tags         admin
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {array} model.ReportLot
+// @Failure      401
+// @Failure      500
+// @Router       /admin/reports [get]
+func (h *handler) GetReports(c *gin.Context){
+	reports, err:= h.lotsService.GetListOfReports(c.Request.Context())
+	if err != nil {
+		h.logger.Error("get reports repository", "err", err)
+		response.RespondError(c, err)
+		return
+	}
+	response.RespondJSON(c, http.StatusOK, reports)
 }
 
 func parseID(c *gin.Context) (int64, int64, error) {
@@ -726,4 +829,12 @@ type updateStatusRequest struct {
 type moderateRequest struct {
 	Approve bool   `json:"approve"`
 	Reason  string `json:"reason"`
+}
+
+type reportRequest struct {
+	Reason string `binding:"required" json:"reason"`
+}
+
+type cancelRequest struct {
+	Reason string `binding:"required" json:"reason"`
 }

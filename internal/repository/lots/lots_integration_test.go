@@ -521,3 +521,70 @@ func TestGetMineLots_Integration(t *testing.T) {
 	require.Equal(t, "electronics", lots[0].Category)
 	require.Equal(t, "live", lots[0].Status)
 }
+func TestCancelLot_Integration(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	defer pool.Close()
+
+	repo, err := New(pool)
+	require.NoError(t, err)
+	sellerID := createSeller(t, ctx, pool)
+	title := fmt.Sprintf("lot_%d", time.Now().UnixNano())
+	err = repo.CreateLot(ctx, title, "desc", "electronics", 100, "",
+		time.Now().Add(time.Hour), "live", sellerID, 100)
+	require.NoError(t, err)
+
+	var lotID int64
+	err = pool.QueryRow(ctx, `SELECT id FROM lots WHERE title=$1`, title).Scan(&lotID)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM lots WHERE id=$1`, lotID)
+	})
+	ok, err := repo.CancelLot(ctx, lotID, "duplicate listing")
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	var status, reason string
+	err = pool.QueryRow(ctx, `SELECT status, cancellation_reason FROM lots WHERE id=$1`, lotID).
+		Scan(&status, &reason)
+	require.NoError(t, err)
+	require.Equal(t, "cancelled", status)
+	require.Equal(t, "duplicate listing", reason)
+}
+
+func TestCreateReportAndGetListOfReports_Integration(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	defer pool.Close()
+
+	repo, err := New(pool)
+	require.NoError(t, err)
+
+	sellerID := createSeller(t, ctx, pool)
+	title := fmt.Sprintf("lot_%d", time.Now().UnixNano())
+	err = repo.CreateLot(ctx, title, "desc", "electronics", 100, "",
+		time.Now().Add(time.Hour), "live", sellerID, 100)
+	require.NoError(t, err)
+
+	var lotID int64
+	err = pool.QueryRow(ctx, `SELECT id FROM lots WHERE title=$1`, title).Scan(&lotID)
+	require.NoError(t, err)
+
+	reporterID := createSeller(t, ctx, pool)
+	err = repo.CreateReport(ctx, lotID, reporterID, "fraudulent activity")
+	require.NoError(t, err)
+
+	reports, err := repo.GetListOfReports(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, reports)
+
+	found := false
+	for _, rep := range reports {
+		if rep.LotID == lotID && rep.ReporterID == reporterID {
+			found = true
+			require.Equal(t, "fraudulent activity", rep.Reason)
+		}
+	}
+	require.True(t, found, "expected report not found")
+}

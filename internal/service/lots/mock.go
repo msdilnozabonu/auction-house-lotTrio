@@ -17,6 +17,21 @@ type Mock struct {
 	mock.Mock
 }
 
+func (m *Mock) CancelLot(ctx context.Context, id int64, reason string) error {
+	args := m.Called(ctx, id, reason)
+		return args.Error(0)
+}
+
+func (m *Mock) ReportLot(ctx context.Context, lotId, reporterId int64, reason string) error {
+	args := m.Called(ctx, lotId, reporterId, reason)
+		return args.Error(0)
+}
+
+func (m *Mock) GetListOfReports(ctx context.Context) ([]model.ReportLot, error) {
+	args := m.Called(ctx)
+		return args.Get(0).([]model.ReportLot), args.Error(1)
+}
+
 func (m *Mock) ExportLots(ctx context.Context, from, to time.Time) ([]model.LotsExport, error) {
 	args := m.Called(ctx, from, to)
 		return args.Get(0).([]model.LotsExport), args.Error(1)

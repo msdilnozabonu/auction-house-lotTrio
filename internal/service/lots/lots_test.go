@@ -688,3 +688,81 @@ func TestService_ExportLots_Success(t *testing.T) {
 		m.AssertExpectations(t)
 	})
 }
+func TestService_CancelLot(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("CancelLot", mock.Anything, int64(1), "reason").
+			Return(true, nil)
+		svc := NewService(m)
+		err := svc.CancelLot(t.Context(), 1, "reason")
+		require.NoError(t, err)
+		m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("CancelLot", mock.Anything, int64(1), "reason").
+			Return(false, errors.New("db error"))
+		svc := NewService(m)
+		err := svc.CancelLot(t.Context(), 1, "reason")
+		require.ErrorContains(t, err, "db error")
+		m.AssertExpectations(t)
+	})
+	t.Run("empty reason", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		svc := NewService(new(lots.MockRepo))
+		err := svc.CancelLot(t.Context(), 1, "")
+		require.ErrorContains(t, err, "reason is required")
+		m.AssertExpectations(t)
+	})
+}
+func TestService_ReportLot(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("CreateReport", mock.Anything, int64(1), int64(11), "reason").
+			Return(nil)
+		svc := NewService(m)
+		err := svc.ReportLot(t.Context(), 1, 11, "reason")
+		require.NoError(t, err)
+		m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("CreateReport", mock.Anything, int64(1), int64(11), "reason").
+			Return(errors.New("db error"))
+		svc := NewService(m)
+		derr := svc.ReportLot(t.Context(), 1, 11, "reason")
+		require.ErrorContains(t, derr, "db error")
+		m.AssertExpectations(t)
+	})
+	t.Run("empty reason", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		svc := NewService(new(lots.MockRepo))
+		derr := svc.ReportLot(t.Context(), 1, 11, "")
+		require.ErrorContains(t, derr, "reason is required")
+		m.AssertExpectations(t)
+	})
+}
+func TestService_GetListOfReports(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		expect := []model.ReportLot{
+			{ID: 1, LotID: 2, ReporterID: 42, Reason: "reason", CreatedAt: time.Now()},
+		}
+		m.On("GetListOfReports", mock.Anything).
+			Return(expect, nil)
+		svc := NewService(m)
+			rows, err := svc.GetListOfReports(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, expect, rows)
+			m.AssertExpectations(t)
+	})
+	t.Run("db error", func(t *testing.T) {
+		m := new(lots.MockRepo)
+		m.On("GetListOfReports", mock.Anything).
+			Return([]model.ReportLot{}, errors.New("db error"))
+		svc := NewService(m)
+		_, err := svc.GetListOfReports(t.Context())
+		require.ErrorContains(t, err, "db error")
+		m.AssertExpectations(t)
+	})
+}

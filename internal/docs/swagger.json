@@ -245,6 +245,92 @@
                 }
             }
         },
+        "/admin/lots/{id}/cancel": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Отменяет лот с указанием причины (только draft/live)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Снять лот",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Причина отмены",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.cancelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/admin/reports": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает необработанные жалобы на лоты",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Список жалоб",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.ReportLot"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/admin/stats": {
             "get": {
                 "security": [
@@ -646,7 +732,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Размещает ставку на активный лот",
+                "description": "Размещает ставку на активный лот. Сумма ставки должна соответствовать минимальному шагу ставки.",
                 "consumes": [
                     "application/json"
                 ],
@@ -899,6 +985,119 @@
                 }
             }
         },
+        "/lots/{id}/bids": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает историю ставок по указанному лоту.\nУчастник получает историю с пагинацией.\nПродавец получает ставки по своему лоту.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bids"
+                ],
+                "summary": "Получить ставки по лоту",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы (для участника)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество элементов на странице (для участника)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Bid"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/lots/{id}/report": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Пользователь сообщает о нарушении в лоте",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lots"
+                ],
+                "summary": "Пожаловаться на лот",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID лота",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Причина жалобы",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/lots.reportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
         "/me": {
             "get": {
                 "security": [
@@ -1075,6 +1274,17 @@
                 }
             }
         },
+        "lots.cancelRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "lots.lotsRequest": {
             "type": "object",
             "required": [
@@ -1144,6 +1354,17 @@
                 }
             }
         },
+        "lots.reportRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "lots.updateLotRequest": {
             "type": "object",
             "required": [
@@ -1183,6 +1404,9 @@
             "properties": {
                 "amount": {
                     "type": "number"
+                },
+                "bidder_id": {
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
@@ -1284,6 +1508,29 @@
                 },
                 "total_revenue": {
                     "type": "number"
+                }
+            }
+        },
+        "model.ReportLot": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lot_id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "reporter_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
