@@ -4,12 +4,14 @@ import (
 	"auction-house-lotTrio/internal/handler/auth"
 	bidhandler "auction-house-lotTrio/internal/handler/bid"
 	lots2 "auction-house-lotTrio/internal/handler/lots"
+	"auction-house-lotTrio/internal/handler/seller"
 	userhandler "auction-house-lotTrio/internal/handler/user"
 	watchlisthandler "auction-house-lotTrio/internal/handler/watchlist"
 	winshandler "auction-house-lotTrio/internal/handler/wins"
 	"auction-house-lotTrio/internal/middleware"
 	bidrepo "auction-house-lotTrio/internal/repository/bid"
 	"auction-house-lotTrio/internal/repository/lots"
+	seller2 "auction-house-lotTrio/internal/repository/seller"
 	"auction-house-lotTrio/internal/repository/session"
 	"auction-house-lotTrio/internal/repository/user"
 	"auction-house-lotTrio/internal/repository/watchlist"
@@ -18,6 +20,7 @@ import (
 	auth2 "auction-house-lotTrio/internal/service/auth"
 	bidservice "auction-house-lotTrio/internal/service/bid"
 	lots3 "auction-house-lotTrio/internal/service/lots"
+	seller3 "auction-house-lotTrio/internal/service/seller"
 	userservice "auction-house-lotTrio/internal/service/user"
 	watchlistservice "auction-house-lotTrio/internal/service/watchlist"
 	winsservice "auction-house-lotTrio/internal/service/wins"
@@ -146,6 +149,7 @@ func newPool(ctx context.Context) *pgxpool.Pool {
 	return pool
 }
 
+//nolint:funlen
 func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *slog.Logger) (*gin.Engine, error) {
 	userRepo, err := user.New(pool)
 	if err != nil {
@@ -194,8 +198,16 @@ func buildRouter(ctx, schedulerCtx context.Context, pool *pgxpool.Pool, logger *
 	watchlistService := watchlistservice.NewService(watchlistRepo)
 	watchlistHandler := watchlisthandler.NewHandler(watchlistService)
 
+	sellerStatsRepo, err := seller2.New(pool)
+	if err != nil {
+		slog.Error("create seller stats repository", "err", err)
+		os.Exit(1)
+	}
+	sellerStatsService := seller3.NewService(sellerStatsRepo)
+	sellerHandle := seller.NewHandler(sellerStatsService)
+
 	engine, err := router.New(ctx, pool, authHandler, userHandler, mw, lotsHandler, bidHandler, winsHandler,
-		watchlistHandler)
+		watchlistHandler, sellerHandle)
 
 	if err != nil {
 		return nil, fmt.Errorf("create router: %w", err)
