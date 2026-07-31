@@ -1,4 +1,5 @@
-@host = http://localhost:9999/api/v1
+@host = https://auction-house-lottrio-phu6.onrender.com/api/v1
+@lotId = 11
 
 
 ### Login bidder
@@ -19,4 +20,95 @@ Content-Type: application/json
 
 ### My profile
 GET {{host}}/me
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Get all lots
+GET {{host}}/lots
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Filter by houses
+GET {{host}}/lots?category=house
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Filter by others
+GET {{host}}/lots?category=other
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Search + category
+GET {{host}}/lots?search=house&category=flat
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Category + price range
+GET {{host}}/lots?category=house&minPrice=100000&maxPrice=500000
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Category + pagination
+GET {{host}}/lots?category=flat&page=1&limit=10
+Authorization: Bearer {{bidderAccessToken}}
+
+### Get lot by ID
+GET {{host}}/lots/{{lotId}}
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Place bid
+POST {{host}}/lots/{{lotId}}/bid
+Authorization: Bearer {{bidderAccessToken}}
+Content-Type: application/json
+
+{
+  "amount": 1000000
+}
+
+###
+
+### My bids
+GET {{host}}/bids
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### My wins
+GET {{host}}/wins
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Add to watchlist
+POST {{host}}/lots/{{lotId}}/watch
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Remove from watchlist
+DELETE {{host}}/lots/{{lotId}}/watch
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Get watchlist
+GET {{host}}/watchlist
+Authorization: Bearer {{bidderAccessToken}}
+
+### Lot bids (page 1)
+GET {{host}}/lots/{{lotId}}/bids?page=1&limit=15
+Authorization: Bearer {{bidderAccessToken}}
+
+###
+
+### Lot bids (page 2)
+GET {{host}}/lots/{{lotId}}/bids?page=2&limit=15
 Authorization: Bearer {{bidderAccessToken}}
