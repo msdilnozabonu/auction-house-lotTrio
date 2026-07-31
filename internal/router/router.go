@@ -70,15 +70,15 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 	lotsGroup := api.Group("/lots")
 	lotsGroup.Use(newMiddleware.Auth())
 	{
-		lotsGroup.POST("/new", lotHandler.CreateLot)
+		lotsGroup.POST("/new", middleware.RequireRole("seller"), lotHandler.CreateLot)
 		lotsGroup.GET("", lotHandler.GetAll)
 		lotsGroup.GET("/:id", lotHandler.GetByID)
-		lotsGroup.PUT("/:id", lotHandler.UpdateByID)
-		lotsGroup.PUT("/:id/status", lotHandler.UpdateStatusByID)
-		lotsGroup.DELETE("/:id", lotHandler.DeleteLots)
-		lotsGroup.POST("/:id/photo", lotHandler.UploadPhoto)
+		lotsGroup.PUT("/:id", middleware.RequireRole("seller"), lotHandler.UpdateByID)
+		lotsGroup.PUT("/:id/status", middleware.RequireRole("seller"), lotHandler.UpdateStatusByID)
+		lotsGroup.DELETE("/:id", middleware.RequireRole("seller"), lotHandler.DeleteLots)
+		lotsGroup.POST("/:id/photo", middleware.RequireRole("seller"), lotHandler.UploadPhoto)
 		lotsGroup.GET("/:id/photo", lotHandler.GetPhoto)
-		lotsGroup.GET("/mine", newMiddleware.Auth(), lotHandler.GetMine)
+		lotsGroup.GET("/mine", middleware.RequireRole("seller"), lotHandler.GetMine)
 
 		lotsGroup.POST("/:id/bid", middleware.RequireRole("bidder"), bidHandler.PlaceBid)
 		lotsGroup.GET("/:id/bids", bidHandler.GetBidsByLotID)
@@ -87,13 +87,13 @@ func New(ctx context.Context, pool *pgxpool.Pool,
 		lotsGroup.DELETE("/:id/watch", middleware.RequireRole("bidder"), watchlistHandler.Delete)
 
 		lotsGroup.POST("/:id/report", lotHandler.ReportLot)
-		lotsGroup.PUT("/:id/cancel", sellerHandle.CanceledLot)
+		lotsGroup.PUT("/:id/cancel", middleware.RequireRole("seller"), sellerHandle.CanceledLot)
 	}
 
 	api.GET("/bids", newMiddleware.Auth(), middleware.RequireRole("bidder"), bidHandler.GetBiddersBids)
 	api.GET("/wins", newMiddleware.Auth(), middleware.RequireRole("bidder"), winsHandler.GetWins)
 	api.GET("/watchlist", newMiddleware.Auth(), middleware.RequireRole("bidder"), watchlistHandler.GetWatchlist)
-	api.GET("/seller/stats", newMiddleware.Auth(), sellerHandle.GetSellerStats)
+	api.GET("/seller/stats", newMiddleware.Auth(), middleware.RequireRole("seller"), sellerHandle.GetSellerStats)
 
 	return engine, nil
 }

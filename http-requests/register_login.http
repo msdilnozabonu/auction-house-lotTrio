@@ -1,0 +1,195 @@
+@host = https://auction-house-lottrio-phu6.onrender.com/api/v1
+
+###
+
+# Register
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "login": "bidder1",
+  "password": "password123",
+  "role": "bidder"
+}
+
+###
+
+# Login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "bidder1",
+  "password": "password123"
+}
+
+> {%
+    client.test("Login success", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.global.set("accessToken", response.body.access_token);
+    client.global.set("refreshToken", response.body.refresh_token);
+%}
+
+###
+
+# Get profile
+GET {{host}}/me
+Authorization: Bearer {{accessToken}}
+
+> {%
+    client.test("Me success", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+###
+
+# Refresh
+POST {{host}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Refresh success", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.global.set("accessToken", response.body.access_token);
+    client.global.set("refreshToken", response.body.refresh_token);
+%}
+
+###
+
+# Logout
+POST {{host}}/auth/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Logout success", function () {
+        client.assert(response.status === 204);
+    });
+%}
+
+###
+
+# Refresh after logout (must fail)
+POST {{host}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Refresh rejected after logout", function () {
+        client.assert(response.status === 401);
+    });
+%}
+
+###
+
+# Login again
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "bidder1",
+  "password": "password123"
+}
+
+> {%
+    client.test("Login after logout", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.global.set("accessToken", response.body.access_token);
+    client.global.set("refreshToken", response.body.refresh_token);
+%}
+
+###
+
+# Refresh after new login
+POST {{host}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Refresh after relogin", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+#################################################
+# SELLER
+#################################################
+
+###
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "login": "seller1",
+  "password": "password123",
+  "role": "seller"
+}
+
+###
+
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "seller1",
+  "password": "password123"
+}
+
+> {%
+    client.global.set("sellerAccessToken", response.body.access_token);
+    client.global.set("sellerRefreshToken", response.body.refresh_token);
+%}
+
+#################################################
+# ADMIN
+#################################################
+
+###
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "login": "admin1",
+  "password": "password123",
+  "role": "admin"
+}
+
+###
+
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin1",
+  "password": "password123"
+}
+
+> {%
+    client.global.set("adminAccessToken", response.body.access_token);
+    client.global.set("adminRefreshToken", response.body.refresh_token);
+%}
+
+
+###

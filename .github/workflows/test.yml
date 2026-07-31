@@ -110,14 +110,16 @@ jobs:
           npm install -g badgen-cli
 
           COV=${{ steps.coverage.outputs.total }}
-
-          COLOR=$(node -p '
-            const c = +process.env.COV;
-            c >= 70 ? "green" :
-            c >= 60 ? "yellow" :
-            c >= 50 ? "orange" :
+  
+          COLOR=$(
+          COV="$COV" node -p '
+          const c = Number(process.env.COV);
+          c >= 70 ? "green" :
+          c >= 60 ? "yellow" :
+          c >= 50 ? "orange" :
             "red"
-          ')
+            '
+          )
 
           mkdir -p badges
 
