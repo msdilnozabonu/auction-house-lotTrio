@@ -1,1 +1,87 @@
-@host = http://localhost:9999/api/v1
+@host = https://auction-house-lottrio-phu6.onrender.com/api/v1
+
+### Login seller
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login":"Maftuna",
+  "password":"sellerseller"
+}
+
+> {%
+    client.global.set("sellerAccessToken", response.body.access_token);
+    client.global.set("sellerRefreshToken", response.body.refresh_token);
+%}
+
+### Create lot
+POST {{host}}/lots/new
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+{
+  "title": "House",
+  "description": "old house",
+  "startPrice" : 200000,
+  "photo" : "https://i.pinimg.com/474x/bd/a8/0e/bda80e9324bd6d5c83b84b6eac5a1e5d.jpg",
+  "endsAt": "2026-12-31T23:59:59Z",
+  "status": "live",
+  "category": "house"
+}
+
+### Get all lots
+GET {{host}}/lots
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+
+### Update status draft -> live -> cancel
+PUT {{host}}/lots/4/status
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+{
+  "status": "closed"
+}
+
+### Get lot by id
+GET {{host}}/lots/3
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+### Delete by id
+DELETE {{host}}/lots/5
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+### Upload photo
+POST http://localhost:9999/api/v1/lots/2/photo
+Authorization: Bearer {{sellerAccessToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="photo"; filename="test.jpg"
+Content-Type: image/jpeg
+
+< /Users/a1/Pictures/images/99C8B763-5990-42A1-97CC-F4DA88204A85_4_5005_c.jpeg
+--WebAppBoundary--
+
+###
+GET http://localhost:9999/api/v1/lots/2/photo
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+###
+GET {{host}}/lots/mine
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+###
+GET {{host}}/lots/14/bids
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}
+
+###
+GET {{host}}/seller/stats
+Content-Type: application/json
+Authorization: Bearer {{sellerAccessToken}}

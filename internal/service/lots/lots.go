@@ -231,6 +231,7 @@ func (s *service) FindLotsForAdmin(ctx context.Context, filter model.LotsFilter)
 	}
 	return items, total, nil
 }
+
 func (s *service) UploadPhotoById(ctx context.Context, sellerID, id int64, filename string,
 	size int64, contentType string) error {
 	lot, err := s.lotsRepo.GetById(ctx, id)

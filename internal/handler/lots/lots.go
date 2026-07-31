@@ -429,6 +429,7 @@ func (h *handler) UploadPhoto(c *gin.Context) {
 	}
 	photoURL := "/uploads/images/" + fileName
 
+
 	src, err := file.Open()
 	if err != nil {
 		response.RespondError(c, err)
