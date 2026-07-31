@@ -1,0 +1,162 @@
+###
+#admin
+POST http://localhost:9999/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "login": "AdminTest1",
+  "password": "adminadmin",
+  "role": "admin"
+}
+
+
+###
+POST http://localhost:9999/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "AdminTest1",
+  "password": "adminadmin"
+}
+
+> {%
+    client.global.set("accessToken", response.body.access_token);
+%}
+
+###
+#bidder
+POST http://localhost:9999/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "login": "BidderTest1",
+  "password": "bidderbid",
+  "role": "bidder"
+}
+
+###
+POST http://localhost:9999/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "BidderTest1",
+  "password": "bidderbid"
+}
+
+> {%
+    client.global.set("accessToken", response.body.access_token);
+%}
+
+###
+# View all lots as admin (no filters)
+GET http://localhost:9999/api/v1/admin/lots
+Authorization: Bearer {{accessToken}}
+
+###
+# Moderate a lot
+PUT http://localhost:9999/api/v1/admin/lots/3/moderate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "approve": true,
+  "reason": ""
+}
+###
+# Moderate a lot
+PUT http://localhost:9999/api/v1/admin/lots/3/moderate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+"approve": false,
+"reason": "testing"
+}
+
+###
+# Platform stats
+GET http://localhost:9999/api/v1/admin/stats
+Authorization: Bearer {{accessToken}}
+
+###
+#export
+GET http://localhost:9999/api/v1/admin/export?format=json&date_from=2026-07-01&date_to=2027-01-01
+Authorization: Bearer {{accessToken}}
+
+###
+# View pending reports
+GET http://localhost:9999/api/v1/admin/reports
+Authorization: Bearer {{accessToken}}
+
+###
+# Cancel a lot
+PUT http://localhost:9999/api/v1/admin/lots/3/cancel
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "reason": "testing"
+}
+
+###
+POST http://localhost:9999/api/v1/admin/close-expired
+Authorization: Bearer {{accessToken}}
+
+
+###
+POST http://localhost:9999/api/v1/lots/3/report
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "reason": "This listing looks suspicious"
+}
+
+###
+POST http://localhost:9999/api/v1/lots/new
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Test6",
+  "description": "testing",
+  "category": "other",
+  "startPrice": 50,
+  "photo": "https://example.com/pho.jpg",
+  "endsAt": "2026-07-31T14:53:00Z",
+  "status": "live"
+}
+
+###
+#seller
+POST http://localhost:9999/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "login": "SellerTest1",
+  "password": "sellerpass",
+  "role": "seller"
+}
+
+###
+POST http://localhost:9999/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "SellerTest1",
+  "password": "sellerpass"
+}
+
+> {%
+    client.global.set("sellerToken", response.body.access_token);
+%}
+
+
+###
+POST http://localhost:9999/api/v1/lots/13/bid
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amount": 20000000
+}
