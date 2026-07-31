@@ -420,7 +420,8 @@ func (h *handler) UploadPhoto(c *gin.Context) {
 
 	filePath := filepath.Ext(file.Filename)
 	fileName := uuid.New().String() + filePath
-	dstPath := "uploads/images/" + fileName
+	//dstPath := "uploads/images/" + fileName
+	dstPath := "/Users/a1/GolandProjects/auction-house-lotTrio/uploads/images/" + fileName
 
 	err = c.SaveUploadedFile(file, dstPath)
 	if err != nil {
@@ -428,6 +429,7 @@ func (h *handler) UploadPhoto(c *gin.Context) {
 		return
 	}
 	photoURL := "/uploads/images/" + fileName
+
 
 	src, err := file.Open()
 	if err != nil {

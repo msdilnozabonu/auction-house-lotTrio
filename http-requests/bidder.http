@@ -20,5 +20,3 @@ Content-Type: application/json
 ### My profile
 GET {{host}}/me
 Authorization: Bearer {{bidderAccessToken}}
-
-###
