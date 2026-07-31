@@ -1,0 +1,24 @@
+@host = http://localhost:9999/api/v1
+
+
+### Login bidder
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login":"bidder1",
+  "password":"password123"
+}
+
+> {%
+    client.global.set("bidderAccessToken", response.body.access_token);
+    client.global.set("bidderRefreshToken", response.body.refresh_token);
+%}
+
+###
+
+### My profile
+GET {{host}}/me
+Authorization: Bearer {{bidderAccessToken}}
+
+###
